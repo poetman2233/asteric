@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Asteric</title>
+<meta name="description" content="Asteric is the decision intelligence layer for contingency litigation: a structured record of what your firm believed, what it committed, and what happened." />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="/fonts/fonts.css" />
+<link rel="stylesheet" href="/landing/landing.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <canvas id="constellation" aria-hidden="true"></canvas>
+
+  <!-- ================= NAV ================= -->
+  <header class="nav" id="nav" data-scrolled="false">
+    <div class="nav__inner wrap">
+      <a class="brand" href="#top" aria-label="Asteric, home">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <line x1="20" y1="4" x2="20" y2="36"/>
+            <line x1="4" y1="20" x2="36" y2="20"/>
+            <line x1="10.5" y1="10.5" x2="29.5" y2="29.5"/>
+            <line x1="29.5" y1="10.5" x2="10.5" y2="29.5"/>
+            <circle cx="20" cy="20" r="2.4" fill="currentColor" stroke="none"/>
+            <circle cx="20" cy="4" r="1.5" fill="currentColor" stroke="none"/>
+            <circle cx="36" cy="20" r="1.5" fill="currentColor" stroke="none"/>
+          </svg>
+        </span>
+        <span class="brand__word">Asteric</span>
+      </a>
+
+      <nav class="nav__links" aria-label="Primary">
+        <a href="#ledger">Ledger</a>
+        <a href="#calibration">Calibration</a>
+        <a href="#economics">Economics</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+
+      <a class="nav__login" href="/login">Log in</a>
+      <a class="btn btn--ink nav__cta" href="/request-access">Request access</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <span id="top"></span>
+
+    <!-- ================= HERO ================= -->
+    <section class="hero">
+      <div class="hero__copy wrap">
+        <div class="hero__mark" id="heroMark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+            <line x1="20" y1="3" x2="20" y2="37"/>
+            <line x1="3" y1="20" x2="37" y2="20"/>
+            <line x1="9.5" y1="9.5" x2="30.5" y2="30.5"/>
+            <line x1="30.5" y1="9.5" x2="9.5" y2="30.5"/>
+            <circle cx="20" cy="20" r="2.6" fill="currentColor" stroke="none"/>
+            <circle cx="20" cy="3" r="1.5" fill="currentColor" stroke="none"/>
+            <circle cx="37" cy="20" r="1.5" fill="currentColor" stroke="none"/>
+            <circle cx="30.5" cy="9.5" r="1.3" fill="currentColor" stroke="none"/>
+          </svg>
+        </div>
+        <h1 class="hero__title" data-reveal>
+          Turn legal outcomes into intelligence.
+        </h1>
+        <p class="hero__sub" data-reveal>
+          Every dispute your firm resolves is a single point of data. Asteric
+          connects those points into a private network, surfacing settlement
+          patterns that no individual case can reveal.
+        </p>
+        <div class="hero__cta" data-reveal>
+          <a class="btn btn--ink" href="/request-access">Request access</a>
+          <a class="btn btn--quiet" href="#ledger">See how it works</a>
+        </div>
+        <p class="hero__note" data-reveal>Built for plaintiff-side employment, PI, and mass-tort practices.</p>
+      </div>
+
+      <!-- Hero product surface: dark glass dashboard -->
+      <div class="hero__surface" data-reveal data-parallax="0.06">
+        <div class="glass glass--wide">
+          <div class="glass__bar">
+            <span class="glass__title">Portfolio · Keller &amp; Ross Employment Law</span>
+            <span class="glass__meta">600 closed matters · illustrative</span>
+          </div>
+          <div class="kpis">
+            <div class="kpi">
+              <span class="kpi__label">Brier score</span>
+              <span class="kpi__value" data-count data-to="0.18" data-dp="2">0.00</span>
+              <span class="kpi__foot">lower is better</span>
+            </div>
+            <div class="kpi">
+              <span class="kpi__label">Median duration error</span>
+              <span class="kpi__value">+<span data-count data-to="3.2" data-dp="1">0.0</span> mo</span>
+              <span class="kpi__foot">runs longer than predicted</span>
+            </div>
+            <div class="kpi">
+              <span class="kpi__label">Return on legal capital</span>
+              <span class="kpi__value"><span data-count data-to="2.1" data-dp="1">0.0</span>&#215;</span>
+              <span class="kpi__foot">portfolio weighted</span>
+            </div>
+          </div>
+          <div class="blotter" role="table" aria-label="Sample matters">
+            <div class="blotter__head" role="row">
+              <span role="columnheader" class="h-name">Matter</span>
+              <span role="columnheader" class="h-cat">Category</span>
+              <span role="columnheader" class="h-num ta-r">Predicted</span>
+              <span role="columnheader" class="h-num ta-r">Actual</span>
+              <span role="columnheader" class="h-rolc ta-r">ROLC</span>
+            </div>
+            <div class="blotter__body" id="blotterBody" role="rowgroup"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= LOGO STRIP ================= -->
+    <section class="strip">
+      <div class="wrap">
+        <p class="strip__label" data-reveal>Imports the export you already have</p>
+        <ul class="logos" data-reveal>
+          <li>Filevine</li>
+          <li>Litify</li>
+          <li>Clio</li>
+          <li>Salesforce</li>
+          <li>SmartAdvocate</li>
+          <li>CSV / XLSX</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================= FEATURE 1 · LEDGER ================= -->
+    <section class="feature" id="ledger">
+      <div class="wrap feature__grid">
+        <div class="feature__text" data-reveal>
+          <h2 class="feature__title">What you believed, preserved beside what happened.</h2>
+          <p class="feature__body">
+            Each matter becomes an immutable timeline. The first prediction, every
+            revision, the offers, and the outcome all sit in one place. Nothing is
+            overwritten, so the belief you held before you knew the result stays
+            exactly as it was.
+          </p>
+          <p class="feature__body feature__body--muted">
+            That sequence cannot be reconstructed after the fact. It only exists if
+            it was captured in the moment.
+          </p>
+        </div>
+
+        <div class="feature__surface" data-reveal data-parallax="0.05">
+          <div class="glass">
+            <div class="glass__bar">
+              <span class="glass__title">Okonkwo v. Meridian Logistics</span>
+              <span class="glass__meta">Wrongful termination</span>
+            </div>
+            <div class="ledger">
+              <div class="ledger__item" data-kind="predict">
+                <span class="ledger__dot"></span>
+                <div class="ledger__body">
+                  <span class="ledger__when">Day 1 · prediction</span>
+                  <span class="ledger__text">$300&#8211;450K, <b>65%</b> favorable, 14 mo</span>
+                </div>
+              </div>
+              <div class="ledger__item" data-kind="event">
+                <span class="ledger__dot"></span>
+                <div class="ledger__body">
+                  <span class="ledger__when">Month 6 · discovery closed</span>
+                  <span class="ledger__text">Key custodian documents produced</span>
+                </div>
+              </div>
+              <div class="ledger__item" data-kind="revise">
+                <span class="ledger__dot"></span>
+                <div class="ledger__body">
+                  <span class="ledger__when">Month 7 · revised</span>
+                  <span class="ledger__text">$400&#8211;550K, <b>78%</b> favorable</span>
+                </div>
+              </div>
+              <div class="ledger__item" data-kind="offer">
+                <span class="ledger__dot"></span>
+                <div class="ledger__body">
+                  <span class="ledger__when">Month 15 · offer</span>
+                  <span class="ledger__text">Defendant, $420,000</span>
+                </div>
+              </div>
+              <div class="ledger__item" data-kind="outcome">
+                <span class="ledger__dot"></span>
+                <div class="ledger__body">
+                  <span class="ledger__when">Month 17 · settled</span>
+                  <span class="ledger__text"><b>$475,000</b>, net to client flagged</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= FEATURE 2 · CALIBRATION ================= -->
+    <section class="feature feature--reverse" id="calibration">
+      <div class="wrap feature__grid">
+        <div class="feature__text" data-reveal>
+          <h2 class="feature__title">We grade judgment the way quant funds are graded.</h2>
+          <p class="feature__body">
+            The calibration curve plots what your partners predicted against what
+            actually happened. This firm tracks the ideal line up to about 70%
+            confidence, then runs systematically overconfident on its largest matters.
+          </p>
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <span class="mini-stat__value" data-count data-to="68" data-suffix="%">0%</span>
+              <span class="mini-stat__label">in range, $200&#8211;400K</span>
+            </div>
+            <div class="mini-stat mini-stat--warn">
+              <span class="mini-stat__value" data-count data-to="31" data-suffix="%">0%</span>
+              <span class="mini-stat__label">in range, above $1M</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature__surface" data-reveal data-parallax="0.05">
+          <div class="glass glass--chart" id="chartGlass">
+            <div class="glass__bar">
+              <span class="glass__title">Probability of favorable resolution</span>
+              <span class="glass__meta" id="scrubProgress">n = 120</span>
+            </div>
+            <div class="chart">
+              <svg class="chart__svg" viewBox="0 0 400 300" role="img" aria-label="Calibration curve tracking the ideal line to about 70 percent, then falling below it.">
+                <g class="chart__grid">
+                  <line x1="46" y1="18" x2="46" y2="262"/>
+                  <line x1="46" y1="262" x2="384" y2="262"/>
+                  <line x1="46" y1="201" x2="384" y2="201"/>
+                  <line x1="46" y1="140" x2="384" y2="140"/>
+                  <line x1="46" y1="79" x2="384" y2="79"/>
+                  <line x1="46" y1="18" x2="384" y2="18"/>
+                </g>
+                <line class="chart__diag" x1="46" y1="262" x2="384" y2="18"/>
+                <path class="chart__curve" id="chartCurve"
+                      d="M46,262 L84,230 L122,196 L160,166 L198,140 L236,118 L274,101 L312,92 L350,86 L384,84"
+                      fill="none"/>
+                <g class="chart__point" id="chartPoint">
+                  <circle class="chart__pulse" cx="312" cy="92" r="6"/>
+                  <circle cx="312" cy="92" r="5.5"/>
+                  <line class="chart__callout" x1="312" y1="92" x2="312" y2="46"/>
+                  <text x="312" y="38" text-anchor="middle">80% said, 66% observed</text>
+                </g>
+                <text class="chart__ax" x="215" y="288" text-anchor="middle">predicted probability</text>
+                <text class="chart__ax" x="15" y="140" text-anchor="middle" transform="rotate(-90 15 140)">observed</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= FEATURE 3 · ECONOMICS ================= -->
+    <section class="feature" id="economics">
+      <div class="wrap feature__grid">
+        <div class="feature__text" data-reveal>
+          <h2 class="feature__title">Your best recoveries are rarely your best economics.</h2>
+          <p class="feature__body">
+            Return on legal capital reframes the firm from maximizing settlements to
+            allocating scarce attention. Sort by it, and the picture inverts. The
+            referral source with the strongest headline numbers can quietly be the
+            worst place to spend your partners' time.
+          </p>
+        </div>
+
+        <div class="feature__surface" data-reveal data-parallax="0.05">
+          <div class="glass">
+            <div class="glass__bar">
+              <span class="glass__title">Return on legal capital</span>
+              <span class="glass__meta">by referral source</span>
+            </div>
+            <div class="rolc">
+              <div class="rolc__row">
+                <span class="rolc__name">Source A</span>
+                <span class="rolc__track"><span class="rolc__bar" data-w="86"></span></span>
+                <span class="rolc__val">3.1&#215;</span>
+              </div>
+              <div class="rolc__row">
+                <span class="rolc__name">In-house intake</span>
+                <span class="rolc__track"><span class="rolc__bar" data-w="64"></span></span>
+                <span class="rolc__val">2.3&#215;</span>
+              </div>
+              <div class="rolc__row">
+                <span class="rolc__name">Bar referral</span>
+                <span class="rolc__track"><span class="rolc__bar" data-w="41"></span></span>
+                <span class="rolc__val">1.5&#215;</span>
+              </div>
+              <div class="rolc__row rolc__row--warn">
+                <span class="rolc__name">Source B</span>
+                <span class="rolc__track"><span class="rolc__bar rolc__bar--warn" data-w="19"></span></span>
+                <span class="rolc__val rolc__val--warn">0.7&#215;</span>
+              </div>
+              <p class="rolc__note">Source B has the strongest headline recoveries and the weakest capital return.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= EMERGE (signature interactive) ================= -->
+    <section class="emerge" id="emerge">
+      <div class="emerge__pin">
+        <div class="emerge__head">
+          <h2 class="emerge__title">Intelligence emerges from the network.</h2>
+          <p class="emerge__cap" id="emergeCap">Every dispute is a single private data point.</p>
+          <div class="emerge__progress" aria-hidden="true"><span id="emergeBar"></span></div>
+        </div>
+        <canvas class="emerge__canvas" id="emergeCanvas" aria-hidden="true"></canvas>
+        <div class="emerge__insight" id="emergeInsight" aria-hidden="true">
+          <span class="emerge__insight-dot"></span>
+          <span class="emerge__insight-k">Emerging pattern</span>
+          <span class="emerge__insight-v">Retaliation claims filed within 90 days settle 22% higher.</span>
+        </div>
+        <p class="emerge__hint" id="emergeHint" aria-hidden="true">Scroll to reveal</p>
+      </div>
+    </section>
+
+    <!-- ================= STATEMENT ================= -->
+    <section class="statement">
+      <div class="wrap">
+        <p class="statement__line" data-reveal>
+          You start with one partner, making one prediction, about one case.
+          The network becomes valuable once that has happened a million times.
+        </p>
+      </div>
+    </section>
+
+    <!-- ================= FAQ ================= -->
+    <section class="faq" id="faq">
+      <div class="wrap faq__grid">
+        <div class="faq__head" data-reveal>
+          <h2 class="faq__title">Questions a partner asks.</h2>
+        </div>
+        <div class="faq__list" data-reveal>
+          <div class="acc" data-open="false">
+            <button class="acc__btn" aria-expanded="false">
+              <span>Does Asteric claim to value a pending case?</span>
+              <span class="acc__chev" aria-hidden="true"></span>
+            </button>
+            <div class="acc__panel"><div class="acc__inner">
+              <p>No, and that restraint is deliberate. The product is descriptive and
+              calibration only. Claiming an omniscient valuation on noisy data would
+              destroy trust. We measure the judgment your partners already make.</p>
+            </div></div>
+          </div>
+          <div class="acc" data-open="false">
+            <button class="acc__btn" aria-expanded="false">
+              <span>What does the calibration curve actually measure?</span>
+              <span class="acc__chev" aria-hidden="true"></span>
+            </button>
+            <div class="acc__panel"><div class="acc__inner">
+              <p>Predicted probability of a favorable resolution against the observed
+              frequency, binned by decile, with a perfectly calibrated diagonal for
+              reference. It is how weather forecasters and quant funds are graded. We
+              make no causal claims.</p>
+            </div></div>
+          </div>
+          <div class="acc" data-open="false">
+            <button class="acc__btn" aria-expanded="false">
+              <span>Our data is a mess. Can you actually use it?</span>
+              <span class="acc__chev" aria-hidden="true"></span>
+            </button>
+            <div class="acc__panel"><div class="acc__inner">
+              <p>The mess is the point. You upload an export, a mapper proposes the
+              schema, free-text categories are normalized with confidence scores, and
+              anything uncertain routes to a review queue. Every field keeps its
+              original value beside the normalized one.</p>
+            </div></div>
+          </div>
+          <div class="acc" data-open="false">
+            <button class="acc__btn" aria-expanded="false">
+              <span>Is my firm's data shared across the network?</span>
+              <span class="acc__chev" aria-hidden="true"></span>
+            </button>
+            <div class="acc__panel"><div class="acc__inner">
+              <p>Never in raw form. You always see your own matters directly. Network
+              intelligence is derived from anonymized, aggregated signals, and
+              individual disputes are never exposed to other firms.</p>
+            </div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CTA ================= -->
+    <section class="cta" id="cta">
+      <div class="wrap cta__inner">
+        <h2 class="cta__title" data-reveal>Join the network with your own matters.</h2>
+        <p class="cta__sub" data-reveal>
+          Bring 200 to 1,000 closed matters and get back an analysis that changes a
+          real decision. We onboard a small number of design-partner firms at a time.
+        </p>
+        <a class="btn btn--ink btn--lg" href="/request-access" data-reveal>Request access</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="footer">
+    <div class="wrap footer__inner">
+      <div class="footer__brand">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <line x1="20" y1="4" x2="20" y2="36"/>
+            <line x1="4" y1="20" x2="36" y2="20"/>
+            <line x1="10.5" y1="10.5" x2="29.5" y2="29.5"/>
+            <line x1="29.5" y1="10.5" x2="10.5" y2="29.5"/>
+            <circle cx="20" cy="20" r="2.4" fill="currentColor" stroke="none"/>
+          </svg>
+        </span>
+        <span class="brand__word">Asteric</span>
+      </div>
+      <nav class="footer__cols" aria-label="Footer">
+        <div class="footer__col">
+          <p class="footer__h">Product</p>
+          <a href="#ledger">Decision ledger</a>
+          <a href="#calibration">Calibration</a>
+          <a href="#economics">Economics</a>
+        </div>
+        <div class="footer__col">
+          <p class="footer__h">Company</p>
+          <a href="/request-access">Request access</a>
+          <a href="/contact">Contact</a>
+          <a href="/login">Log in</a>
+        </div>
+        <div class="footer__col">
+          <p class="footer__h">Legal</p>
+          <a href="/security">Security</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+        </div>
+      </nav>
+    </div>
+    <div class="wrap footer__fine">
+      <span>&#169; 2026 Asteric</span>
+      <span>Demo data is fictional and illustrative. Keller &amp; Ross Employment Law does not exist.</span>
+    </div>
+  </footer>
+<script src="/landing/landing.js" defer></script>
+</body>
+</html>

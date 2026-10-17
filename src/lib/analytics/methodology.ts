@@ -1,0 +1,112 @@
+/**
+ * Plain-language methodology for every metric Asteric displays. Rendered in the
+ * methodology drawer beside each metric. Keep these accurate when formulas change.
+ */
+export type Methodology = { title: string; definition: string; formula: string; included: string; excluded: string; limitations: string };
+
+export const METHODOLOGY: Record<string, Methodology> = {
+  favorable: {
+    title: "Favorable resolution",
+    definition: "The binary event that probability predictions are graded against.",
+    formula: "Favorable = settlement, plaintiff judgment or arbitration award with a gross recovery greater than $0.",
+    included: "All resolved matters with a recorded outcome.",
+    excluded: "Open matters.",
+    limitations: "A small favorable settlement and a large one count equally. Recovery size is graded separately by recovery-range accuracy.",
+  },
+  brier: {
+    title: "Brier score",
+    definition: "The mean squared difference between a predicted probability of favorable resolution and what happened (1 = favorable, 0 = not). It measures the accuracy of probability forecasts.",
+    formula: "Brier = (1/n) Σ (pᵢ − oᵢ)². Range 0 to 1; lower is better. Always forecasting 50% scores 0.25. Skill = 1 − Brier ÷ (base rate × (1 − base rate)); above 0 means the forecasts carried more information than the firm's base rate alone.",
+    included: "Resolved matters with a prediction recorded on or before the resolution date. By default each matter is graded on its initial (underwriting) prediction; you can switch to the latest prediction before resolution.",
+    excluded: "Open matters, matters without a recorded prediction, and demonstration sandbox predictions.",
+    limitations: "Not shown below 30 resolved predictions. Scores depend on the mix of matters; compare attorneys or categories only on similar samples. Historical association only: no causal inference.",
+  },
+  calibration: {
+    title: "Calibration curve",
+    definition: "Groups predictions into ten probability bands and compares the average predicted probability in each band with the share of those matters that resolved favorably.",
+    formula: "For each band: x = mean predicted probability, y = favorable resolutions ÷ matters in band. Error bars are 95% Wilson score intervals. The dashed diagonal is perfect calibration.",
+    included: "Same as the Brier score.",
+    excluded: "Bands with fewer than 5 predictions are shown faded and are not used in insights.",
+    limitations: "Wide intervals mean a band's observed rate is uncertain. The curve describes past forecasting; it does not predict any individual matter.",
+  },
+  range: {
+    title: "Recovery-range accuracy",
+    definition: "How often the gross recovery landed inside the predicted low–high recovery range.",
+    formula: "Within = low ≤ gross recovery ≤ high. Bands group matters by the predicted range midpoint. Median ratio = median of (gross recovery ÷ predicted midpoint).",
+    included: "Matters that resolved favorably with a recorded gross recovery and a prediction recorded before resolution. The range is read as the expected recovery if the matter resolves favorably.",
+    excluded: "Unfavorable resolutions (graded by the probability forecast instead) and matters without a recorded gross recovery.",
+    limitations: "Gross recovery only; fees and costs are analysed under economics.",
+  },
+  duration: {
+    title: "Duration error",
+    definition: "How much longer or shorter a matter took than the expected total duration recorded in its prediction.",
+    formula: "Error (months) = (resolution date − date opened) − expected duration. Positive values mean the matter took longer than forecast. Months use the average month length of 30.44 days.",
+    included: "Resolved matters with a date opened and a prediction recorded before resolution.",
+    excluded: "Open matters (see Portfolio Watch) and matters without an opening date.",
+    limitations: "Expected duration is interpreted as total duration from opening, as captured in Asteric's prediction form.",
+  },
+  expense: {
+    title: "Expense error",
+    definition: "Final litigation expense relative to the expense expected in the prediction.",
+    formula: "Ratio = actual litigation expenses ÷ expected expense. Median % error = median ratio − 1.",
+    included: "Resolved matters with recorded final expenses and a prediction with a positive expected expense.",
+    excluded: "Matters without recorded expenses.",
+    limitations: "Expense categories differ between firms' accounting; compare within a firm.",
+  },
+  rolc: {
+    title: "Return on legal capital (ROLC)",
+    definition: "Dollars returned to the firm for each dollar of legal capital committed to resolved matters.",
+    formula: "Return = net fee (attorney fee − referral fee paid) + expenses reimbursed from a favorable recovery. Capital (expense-only) = litigation expenses. Capital (fully costed) = expenses + attorney hours × the organization's configured hourly cost. ROLC = Σ return ÷ Σ capital, so larger matters weigh in proportion to capital consumed. 1.00× is break-even.",
+    included: "Resolved matters with a recorded fee (or a fee derived from the configured default contingency rate, labelled as derived) and recorded expenses.",
+    excluded: "Open matters; resolved matters missing a fee or expenses (counts are shown). Fully costed ROLC is reported only where attorney hours and an hourly cost are both available.",
+    limitations: "Expense reimbursement follows the organization's setting (default: reimbursed from favorable recoveries). The time value of money is not discounted in V1; median duration is shown beside every ROLC figure. Historical association only: a source or category with weaker returns did not necessarily cause them.",
+  },
+  referral: {
+    title: "Referral-source economics",
+    definition: "Outcomes and economics for matters attributed to each referral source.",
+    formula: "Same definitions as ROLC, recovery and duration, grouped by the referral source recorded on the matter.",
+    included: "Matters with a referral source.",
+    excluded: `Sources with fewer than 15 resolved matters are listed but not ranked in insights.`,
+    limitations: "Attribution reflects the source recorded in the firm's data. Associations are descriptive; differences in case mix can explain them.",
+  },
+  watch: {
+    title: "Portfolio Watch",
+    definition: "Open matters whose current facts have moved away from the assumptions in their latest recorded prediction.",
+    formula: "Expense variance: expenses to date ÷ latest expected expense − 1 above the organization's threshold (default 25%). Duration exceeded: months open > latest expected duration. Major event: a discovery close, motion decision, mediation, trial setting or settlement conference after the latest prediction with no revision since. Stale: latest prediction older than the configured number of days (default 180).",
+    included: "Open matters.",
+    excluded: "Closed matters.",
+    limitations: "Flags prompt a review of assumptions. They are not recommendations about any legal decision.",
+  },
+  coverage: {
+    title: "Prediction coverage",
+    definition: "Share of open matters with at least one recorded prediction.",
+    formula: "Open matters with a recorded prediction ÷ open matters.",
+    included: "Open matters.",
+    excluded: "Demonstration sandbox predictions.",
+    limitations: "Coverage measures whether beliefs are recorded, not their quality.",
+  },
+  capital: {
+    title: "Capital at work",
+    definition: "Litigation expenses currently advanced on open matters.",
+    formula: "Σ expenses to date across open matters. Attorney time is added only when hours and a configured hourly cost exist.",
+    included: "Open matters with recorded expenses to date.",
+    excluded: "Open matters without expense data (count shown).",
+    limitations: "Reflects the most recent expense figures imported or entered.",
+  },
+  quality: {
+    title: "Data completeness",
+    definition: "How many matters carry each field that an analytic depends on.",
+    formula: "Matters with the field present ÷ matters to which the field applies.",
+    included: "All matters in the organization.",
+    excluded: "None.",
+    limitations: "Presence is not correctness; review provenance for imported values.",
+  },
+  insights: {
+    title: "How insights are produced",
+    definition: "Insights are computed by fixed rules over your organization's data. Each states its sample size and period and links to the supporting matters.",
+    formula: "A rule fires only above a minimum sample (e.g. 12–20 matters) and a materiality threshold (e.g. a 10-point calibration gap or a 20% expense overrun). Wording is templated; no language model writes or decides them.",
+    included: "Your organization's matters only.",
+    excluded: "Demonstration sandbox predictions; other organizations' data.",
+    limitations: "Insights describe historical association. They do not establish causation and are not legal advice.",
+  },
+};
