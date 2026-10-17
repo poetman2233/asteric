@@ -18,7 +18,7 @@
   /* ink */
   --ink: #18181b;
   --ink-2: #5e616e;
-  --muted: #777a88;
+  --muted: #686b78;
   --faint: #afb3c4;
   /* structure */
   --line: #e4e4e7;
@@ -28,6 +28,7 @@
   --accent: #3c83f6;
   --accent-ink: #1f5fcf;     /* accent as text: AA on white */
   --accent-2: #0544a5;
+  --accent-btn: #2a6fe6;     /* button fill: white label meets AA (4.6:1) */
   --accent-soft: rgba(60, 131, 246, 0.08);
   --accent-wash: rgba(60, 131, 246, 0.12);
   /* status: always paired with a sign, glyph and label — never colour alone */
@@ -100,8 +101,8 @@ p { margin: 0; }
   transition: background .18s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease), color .18s var(--ease);
 }
 .btn:disabled, .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
-.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 0 0 0.5px #0544a5, inset 0 -1px 0 0 #022c70, inset 0 0.5px 0 0 #81b6ff; }
-.btn-primary:hover:not(:disabled) { background: #2f79ef; }
+.btn-primary { background: var(--accent-btn); color: #fff; box-shadow: 0 0 0 0.5px #0544a5, inset 0 -1px 0 0 #022c70, inset 0 0.5px 0 0 #81b6ff; }
+.btn-primary:hover:not(:disabled) { background: #2263d4; }
 .btn-secondary { background: var(--surface); border-color: var(--line); color: var(--ink); }
 .btn-secondary:hover:not(:disabled) { border-color: var(--line-2); background: var(--surface-2); }
 .btn-ghost { background: transparent; color: var(--ink-2); }
@@ -432,3 +433,5 @@ dialog.palette { border: 1px solid var(--line); border-radius: 14px; padding: 0;
 .seg { max-width: 100%; overflow-x: auto; flex-wrap: nowrap; }
 .seg button { white-space: nowrap; flex: none; }
 .search-trigger > span:not(.kbd) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/* Links inside running text are underlined so they are not identified by color alone. */
+p a, .help a, li a, dd a, .alert a { text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }

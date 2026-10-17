@@ -2,7 +2,7 @@
   "name": "asteric",
   "version": "1.0.0",
   "private": true,
-  "description": "Asteric \u2014 decision intelligence for contingency litigation",
+  "description": "Asteric — decision intelligence for contingency litigation",
   "engines": {
     "node": ">=20.9"
   },
@@ -40,6 +40,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.56.1",
     "@types/node": "^26.6.5",
     "@types/papaparse": "^5.5.2",
