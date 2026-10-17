@@ -1,4 +1,5 @@
 import "server-only";
+import { createHash } from "node:crypto";
 
 /**
  * Central runtime configuration. Every environment variable the server reads is
@@ -33,10 +34,13 @@ export const config = {
   get cronSecret() { return process.env.CRON_SECRET ?? ""; },
   get aiProvider(): "none" | "anthropic" { return process.env.AI_PROVIDER === "anthropic" && process.env.ANTHROPIC_API_KEY && process.env.AI_MODEL ? "anthropic" : "none"; },
   get encryptionKey(): Buffer {
-    const raw = process.env.APP_ENCRYPTION_KEY;
+    const raw = (process.env.APP_ENCRYPTION_KEY ?? "").trim();
     if (!raw) throw new Error("APP_ENCRYPTION_KEY is not configured");
+    // Preferred form: 32 random bytes, base64. Any other random string of 32+ characters
+    // (for example a hex secret from a generator) is accepted and stretched with SHA-256.
     const key = Buffer.from(raw, "base64");
-    if (key.length !== 32) throw new Error("APP_ENCRYPTION_KEY must be 32 bytes, base64-encoded");
-    return key;
+    if (key.length === 32 && /^[A-Za-z0-9+/]{43}=$/.test(raw)) return key;
+    if (raw.length >= 32) return createHash("sha256").update(raw, "utf8").digest();
+    throw new Error("APP_ENCRYPTION_KEY must be at least 32 characters (or 32 bytes, base64-encoded)");
   },
 };
