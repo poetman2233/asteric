@@ -13,6 +13,9 @@ import { CANONICAL_FIELDS, FIELD_BY_KEY } from "@/lib/imports/fields";
 import { AUTO_ACCEPT, clusterNames, normalizeCategory, normalizeResolution, normalizeStatus, type CategoryOption, type Normalized } from "@/lib/imports/normalize";
 import { cellToString, isEmpty, parseDate, parseMoney, parseNumber, parsePercent } from "@/lib/imports/values";
 import { normText } from "@/lib/imports/text";
+import { looksLike } from "@/lib/imports/values";
+import { getAiProvider, type ColumnHint } from "@/server/ai/provider";
+import { logger } from "@/server/logger";
 import { DEFAULT_CATEGORIES, isFavorable } from "@/lib/taxonomy";
 
 export type StoredMapping = { columns: ColumnMapping[] };
@@ -28,13 +31,14 @@ const IMPORTANT = ["name", "external_id", "status", "category", "lead_attorney",
 export async function createImport(ctx: OrgContext, file: { name: string; bytes: Buffer }, opts: { force?: boolean } = {}) {
   const sheet = await parseUpload(file.name, file.bytes);
   const sha256 = createHash("sha256").update(file.bytes).digest("hex");
+  let columns = suggestMapping(sheet.headers, sheet.rows);
+  columns = await aiAssist(ctx, columns, sheet.rows);
   return withTenant(ctx.org.id, async (tx) => {
     if (!opts.force) {
       const dup = (await tx.select({ id: imports.id, createdAt: imports.createdAt, filename: imports.filename }).from(imports)
         .where(and(eq(imports.organizationId, ctx.org.id), eq(imports.sha256, sha256), eq(imports.status, "completed"))).limit(1))[0];
       if (dup) return { duplicateOf: dup } as const;
     }
-    const columns = suggestMapping(sheet.headers, sheet.rows);
     const id = randomUUID();
     await tx.insert(imports).values({
       id, organizationId: ctx.org.id, filename: file.name.slice(0, 200), fileSize: file.bytes.length, mime: sheet.mime, sha256,
@@ -48,6 +52,37 @@ export async function createImport(ctx: OrgContext, file: { name: string; bytes:
     await audit(tx, { ...actor(ctx), action: "import.started", summary: `Uploaded ${file.name} (${sheet.rows.length} rows)`, objectType: "import", objectId: id, metadata: { rows: sheet.rows.length, kind: sheet.kind } });
     return { importId: id } as const;
   });
+}
+
+/**
+ * Optional AI assistance for columns the deterministic matcher could not place.
+ * Sends headers and inferred types only. AI suggestions are capped below the
+ * auto-accept threshold and labelled, so a person always confirms them.
+ */
+async function aiAssist(ctx: OrgContext, columns: ColumnMapping[], rows: Record<string, unknown>[]): Promise<ColumnMapping[]> {
+  const ai = getAiProvider();
+  if (!ai || !ctx.org.settings.aiAssistEnabled) return columns;
+  const weak = columns.filter((c) => c.confidence < 0.6);
+  if (!weak.length) return columns;
+  const infer = (h: string): ColumnHint["inferredType"] => {
+    const vals = rows.slice(0, 30).map((r) => r[h]).filter((v) => !isEmpty(v));
+    if (!vals.length) return "empty";
+    for (const k of ["date", "money", "percent", "number"] as const) if (vals.filter((v) => looksLike(k, v)).length / vals.length >= 0.8) return k;
+    return "text";
+  };
+  const suggestions = await ai.suggestColumnMappings(weak.map((c) => ({ header: c.column, inferredType: infer(c.column) })));
+  const used = new Set(columns.filter((c) => c.field && c.confidence >= 0.6).map((c) => c.field!));
+  let applied = 0;
+  const out = columns.map((c) => {
+    if (c.confidence >= 0.6) return c;
+    const s = suggestions.find((x) => x.header === c.column);
+    if (!s?.field || used.has(s.field) || s.confidence < 0.5) return c;
+    used.add(s.field);
+    applied++;
+    return { ...c, field: s.field, method: "ai" as const, confidence: Math.min(0.75, Math.round(s.confidence * 100) / 100) };
+  });
+  logger.info("ai.mapping_assist", { provider: ai.name, requested: weak.length, applied });
+  return out;
 }
 
 /* ------------------------------------------------------------------ helpers */
