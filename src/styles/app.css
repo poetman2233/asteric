@@ -426,3 +426,9 @@ dialog.palette { border: 1px solid var(--line); border-radius: 14px; padding: 0;
   .sidebar, .topbar, .demo-banner, .page-actions, .filters { display: none !important; }
   .shell { display: block; }
 }
+
+/* ---------- small-screen guards ---------- */
+.card-head { flex-wrap: wrap; }
+.seg { max-width: 100%; overflow-x: auto; flex-wrap: nowrap; }
+.seg button { white-space: nowrap; flex: none; }
+.search-trigger > span:not(.kbd) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }

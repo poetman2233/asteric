@@ -2,7 +2,7 @@
   "name": "asteric",
   "version": "1.0.0",
   "private": true,
-  "description": "Asteric — decision intelligence for contingency litigation",
+  "description": "Asteric \u2014 decision intelligence for contingency litigation",
   "engines": {
     "node": ">=20.9"
   },

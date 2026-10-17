@@ -21,7 +21,7 @@ export const config = {
   get resendApiKey() { return process.env.RESEND_API_KEY ?? ""; },
   get emailConfigured() { return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM); },
   get cronSecret() { return process.env.CRON_SECRET ?? ""; },
-  get aiProvider(): "none" | "anthropic" { return process.env.AI_PROVIDER === "anthropic" && process.env.ANTHROPIC_API_KEY ? "anthropic" : "none"; },
+  get aiProvider(): "none" | "anthropic" { return process.env.AI_PROVIDER === "anthropic" && process.env.ANTHROPIC_API_KEY && process.env.AI_MODEL ? "anthropic" : "none"; },
   get encryptionKey(): Buffer {
     const raw = process.env.APP_ENCRYPTION_KEY;
     if (!raw) throw new Error("APP_ENCRYPTION_KEY is not configured");
