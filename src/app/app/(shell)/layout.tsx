@@ -24,7 +24,7 @@ export default async function AppShellLayout({ children }: { children: React.Rea
   return (
     <Shell
       user={{ name: ctx.user.name, email: ctx.user.isDemoUser ? "Demo access" : ctx.user.email }}
-      org={{ id: ctx.org.id, name: ctx.org.name, isDemo: ctx.org.isDemo }}
+      org={{ id: ctx.org.id, name: ctx.org.name, isDemo: ctx.org.isDemo, deletionOn: ctx.org.deletionRequestedAt ? new Date(ctx.org.deletionRequestedAt.getTime() + 30 * 86400_000).toISOString().slice(0, 10) : null }}
       role={ctx.role}
       memberships={memberships}
       watchCount={watchCount}

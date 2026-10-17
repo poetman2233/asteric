@@ -13,7 +13,7 @@ import { initials } from "@/lib/format";
 
 export type ShellProps = {
   user: { name: string; email: string };
-  org: { id: string; name: string; isDemo: boolean };
+  org: { id: string; name: string; isDemo: boolean; deletionOn: string | null };
   role: Role;
   memberships: { orgId: string; name: string; isDemo: boolean; role: string }[];
   watchCount: number;
@@ -106,6 +106,12 @@ export function Shell(p: ShellProps) {
           <div className="demo-banner" role="note">
             <Icon name="info" size={14} />
             <span><strong>Illustrative demo organization.</strong> All data is synthetic. Predictions you record here are a sandbox and reset daily.</span>
+          </div>
+        ) : null}
+        {p.org.deletionOn ? (
+          <div className="demo-banner" role="alert" style={{ background: "#fdf0ef", color: "var(--neg)" }}>
+            <Icon name="info" size={14} />
+            <span><strong>Deletion scheduled.</strong> This organization and all of its data will be permanently deleted on {p.org.deletionOn}. <Link href="/app/settings/data" style={{ textDecoration: "underline" }}>Manage</Link></span>
           </div>
         ) : null}
         <header className="topbar">

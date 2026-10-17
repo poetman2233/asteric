@@ -21,8 +21,9 @@ const SOURCE_NOTE: Record<string, string> = {
   sandbox: "Sandbox prediction (demo workspace only)",
 };
 
-export default async function MatterPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function MatterPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }) {
   const { id } = await params;
+  const isNew = (await searchParams).new === "1";
   const ctx = await pageOrgContext(`/app/matters/${id}`);
   const d = await getMatterDetail(ctx, id);
   if (!d) notFound();
@@ -80,6 +81,7 @@ export default async function MatterPage({ params }: { params: Promise<{ id: str
         title={m.name}
         sub={<>{[d.category?.label ?? m.originalCategory ?? "Uncategorized", d.attorney?.name ?? "No lead attorney", m.court ?? m.jurisdiction].filter(Boolean).join(" · ")}{" · "}{isOpen ? <span className="badge badge-accent">Open · {m.proceduralStage ?? "Stage not set"}</span> : <span className="badge">Closed {date(m.closedOn)}</span>}</>}
       />
+      {isNew && !preds.length ? <div className="alert alert-success" style={{ marginBottom: 14 }}><span>Matter added. Record the initial prediction now, while the outcome is unknown: it is what calibration will measure.</span></div> : null}
       <div style={{ marginBottom: 18 }}>
         <MatterActions matterId={m.id} open={isOpen} perms={perms} financials={{ expensesToDate: m.expensesToDate, attorneyHours: m.attorneyHours }}
           prev={latest ? { version: latest.version, recoveryLow: latest.recoveryLow, recoveryHigh: latest.recoveryHigh, probability: latest.probability, expectedDurationMonths: latest.expectedDurationMonths, expectedExpense: latest.expectedExpense, confidence: latest.confidence, drivers: latest.drivers } : null} />

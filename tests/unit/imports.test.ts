@@ -81,3 +81,23 @@ describe("normalization", () => {
     expect(r.get("Ana Keller")!.confidence).toBeGreaterThanOrEqual(AUTO_ACCEPT);
   });
 });
+
+import { csvCell, toCsv } from "@/lib/csv";
+describe("CSV export", () => {
+  it("neutralizes formula injection and quotes correctly", () => {
+    expect(csvCell("=HYPERLINK(\"x\")")).toBe(`"'=HYPERLINK(""x"")"`);
+    expect(csvCell("+1")).toBe("'+1");
+    expect(csvCell("@SUM(A1)")).toBe("'@SUM(A1)");
+    expect(csvCell(-5)).toBe("-5");
+    expect(csvCell("Smith, Jane")).toBe(`"Smith, Jane"`);
+    expect(toCsv(["a"], [[null]])).toBe("a\r\n\r\n");
+  });
+});
+
+describe("name clustering", () => {
+  it("prefers the written-out name as canonical", () => {
+    const m = clusterNames([{ raw: "M. Rodriguez", count: 9 }, { raw: "Marco Rodriguez", count: 5 }], [], true);
+    expect(m.get("M. Rodriguez")!.value).toBe("Marco Rodriguez");
+    expect(m.get("Marco Rodriguez")!.confidence).toBeGreaterThan(0.9);
+  });
+});

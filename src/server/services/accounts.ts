@@ -18,7 +18,7 @@ export async function findUserByEmail(email: string) {
 
 /** Creates an organization, its canonical categories, and the owner membership. */
 export async function createOrganization(input: {
-  name: string; practiceArea: PracticeArea; ownerUserId: string; ownerName: string;
+  name: string; practiceArea: PracticeArea; ownerUserId: string | null; ownerName: string;
   attorneyCount?: string; matterVolume?: string; caseManagementSystem?: string; isDemo?: boolean; timezone?: string;
 }, db: Db | Tx = systemDb()) {
   const [org] = await db.insert(organizations).values({
@@ -33,7 +33,8 @@ export async function createOrganization(input: {
   }).returning();
   const defaults = DEFAULT_CATEGORIES[input.practiceArea] ?? DEFAULT_CATEGORIES.employment;
   await db.insert(categories).values(defaults.map((c, i) => ({ organizationId: org!.id, key: c.key, label: c.label, practiceArea: input.practiceArea, sort: i })));
-  await db.insert(memberships).values({ organizationId: org!.id, userId: input.ownerUserId, role: "owner" });
+  // Provisioned by a platform administrator: the owner joins later by accepting an invitation.
+  if (input.ownerUserId) await db.insert(memberships).values({ organizationId: org!.id, userId: input.ownerUserId, role: "owner" });
   await audit(db, { organizationId: org!.id, actorUserId: input.ownerUserId, actorLabel: input.ownerName, action: "organization.created", summary: `Created organization ${org!.name}`, objectType: "organization", objectId: org!.id });
   return org!;
 }

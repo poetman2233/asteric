@@ -76,7 +76,7 @@ export default async function MattersPage({ searchParams }: { searchParams: Prom
     return (
       <>
         <PageHead title="Matters" sub="Every matter, its recorded predictions and what happened." />
-        <Empty title="No matters yet" actions={[{ href: "/app/imports/new", label: "Import matters", primary: true }]}>Import an export from your case management system to populate the matter list.</Empty>
+        <Empty title="No matters yet" actions={[{ href: "/app/imports/new", label: "Import matters", primary: true }, ...(ctx.can("matters.edit") ? [{ href: "/app/matters/new", label: "Add a matter" }] : [])]}>Import an export from your case management system, or add matters one at a time as they come in.</Empty>
       </>
     );
   }
@@ -84,7 +84,7 @@ export default async function MattersPage({ searchParams }: { searchParams: Prom
   return (
     <>
       <PageHead title="Matters" sub="Every matter, its recorded predictions and what happened."
-        actions={ctx.can("data.export") ? <a className="btn btn-secondary" href={`/app/export/matters${filterToQuery(f)}`}>Export CSV</a> : null} />
+        actions={<>{ctx.can("data.export") ? <a className="btn btn-secondary" href={`/app/export/matters${filterToQuery(f)}`}>Export CSV</a> : null}{ctx.can("matters.edit") && !ctx.org.isDemo ? <Link className="btn btn-primary" href="/app/matters/new">New matter</Link> : null}</>} />
       {sp.hint === "record" ? <div className="alert alert-info" style={{ marginBottom: 14 }}><span>Choose an open matter to record or revise its prediction.</span></div> : null}
       <FilterBar options={{ categories: p.categories, attorneys: p.attorneys, referrals: p.referrals, jurisdictions: p.jurisdictions }} extra={<SearchBox />} />
       {chips.length ? (

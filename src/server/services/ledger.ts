@@ -195,3 +195,42 @@ export async function nextPredictionVersion(ctx: OrgContext, matterId: string) {
     return (r[0]?.v ?? 0) + 1;
   });
 }
+
+/* ------------------------------------------------------------------ new matter */
+export const newMatterSchema = z.object({
+  name: z.string().min(2, "Enter the matter name.").max(200),
+  externalId: z.string().max(80).optional(),
+  categoryKey: z.string().max(80).optional(),
+  leadAttorneyId: z.string().uuid().optional(),
+  referralName: z.string().max(160).optional(),
+  jurisdiction: z.string().max(80).optional(),
+  court: z.string().max(160).optional(),
+  openedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter the date opened."),
+  proceduralStage: z.string().max(60).optional(),
+});
+
+export async function createMatter(ctx: OrgContext, input: z.infer<typeof newMatterSchema>) {
+  if (!ctx.can("matters.edit") || ctx.org.isDemo) throw new AuthError("forbidden", ctx.org.isDemo ? "New matters cannot be added to the demonstration workspace." : undefined);
+  return withTenant(ctx.org.id, async (tx) => {
+    if (input.externalId) {
+      const dup = (await tx.select({ id: matters.id }).from(matters).where(and(eq(matters.organizationId, ctx.org.id), eq(matters.externalId, input.externalId))).limit(1))[0];
+      if (dup) throw new LedgerError(`A matter with ID ${input.externalId} already exists.`);
+    }
+    const cat = input.categoryKey ? (await tx.select().from(categories).where(and(eq(categories.organizationId, ctx.org.id), eq(categories.key, input.categoryKey))).limit(1))[0] : undefined;
+    const att = input.leadAttorneyId ? (await tx.select().from(attorneys).where(and(eq(attorneys.organizationId, ctx.org.id), eq(attorneys.id, input.leadAttorneyId))).limit(1))[0] : undefined;
+    let refId: string | null = null;
+    if (input.referralName) {
+      const existing = (await tx.select().from(referralSources).where(and(eq(referralSources.organizationId, ctx.org.id), eq(referralSources.name, input.referralName))).limit(1))[0];
+      refId = existing?.id ?? (await tx.insert(referralSources).values({ organizationId: ctx.org.id, name: input.referralName }).returning())[0]!.id;
+    }
+    const [m] = await tx.insert(matters).values({
+      organizationId: ctx.org.id, name: input.name, externalId: input.externalId || null, status: "open", categoryId: cat?.id ?? null,
+      leadAttorneyId: att?.id ?? null, referralSourceId: refId, jurisdiction: input.jurisdiction || null, court: input.court || null,
+      openedOn: input.openedOn, proceduralStage: input.proceduralStage || "Intake",
+    }).returning();
+    await tx.insert(proceduralEvents).values({ organizationId: ctx.org.id, matterId: m!.id, type: "matter_opened", occurredOn: input.openedOn, title: "Matter opened", createdBy: ctx.user.id });
+    await tx.insert(provenance).values({ organizationId: ctx.org.id, entityType: "matter", entityId: m!.id, field: "matter", normalizedValue: input.name, source: "attorney_entered", method: "manual", reviewedBy: ctx.user.id, reviewedAt: new Date() });
+    await audit(tx, { ...actor(ctx), action: "matter.created", objectType: "matter", objectId: m!.id, summary: `Added matter ${input.name}` });
+    return m!;
+  });
+}

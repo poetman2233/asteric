@@ -102,7 +102,9 @@ export function clusterNames(values: { raw: string; count: number }[], existing:
   const out = new Map<string, Normalized>();
   for (const [k, vs] of groups) {
     const ex = existingByKey.get(k);
-    const preferred = ex ?? [...vs].sort((a, b) => b.count - a.count || b.raw.length - a.raw.length)[0]!.raw;
+    // For people, a written-out first name ("Marco Rodriguez") beats an initial ("M. Rodriguez") even if rarer.
+    const full = (r: string) => (person && /^[A-Za-z]{2,}\s/.test(cleanPersonName(r)) ? 1 : 0);
+    const preferred = ex ?? [...vs].sort((a, b) => full(b.raw) - full(a.raw) || b.count - a.count || b.raw.length - a.raw.length)[0]!.raw;
     const label = person ? cleanPersonName(preferred) : preferred.trim().replace(/\s+/g, " ");
     for (const v of vs) {
       const identical = normText(v.raw) === normText(label) || (person && normText(cleanPersonName(v.raw)) === normText(label));

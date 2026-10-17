@@ -50,6 +50,7 @@ export async function createSession(userId: string, opts: { mfaPending: boolean;
     ipHash: await clientIpHash(),
     expiresAt: new Date(now + SESSION_ABSOLUTE_MS),
   });
+  if (!opts.mfaPending) await systemDb().update(users).set({ lastLoginAt: new Date(now) }).where(eq(users.id, userId));
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

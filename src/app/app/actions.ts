@@ -1,39 +1,22 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect, unstable_rethrow } from "next/navigation";
+import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
-import { ZodError, z } from "zod";
+import { z } from "zod";
+import { run, type ActionResult } from "@/server/action-runner";
 import { systemDb, withTenant } from "@/server/db";
 import { memberships, notificationReads, organizations, sessions } from "@/server/db/schema";
 import { AuthError, getOrgContext, listMemberships, requireUser } from "@/server/auth/session";
-import { addEvent, addOffer, eventSchema, financialSchema, LedgerError, offerSchema, outcomeSchema, predictionSchema, recordOutcome, recordPrediction, updateFinancials } from "@/server/services/ledger";
+import { addEvent, addOffer, createMatter, newMatterSchema, eventSchema, financialSchema, offerSchema, outcomeSchema, predictionSchema, recordOutcome, recordPrediction, updateFinancials } from "@/server/services/ledger";
 import { acceptAllSuggestions, cancelImport, commitImport, createImport, decideReview, saveMappingAndBuildReview } from "@/server/imports/pipeline";
-import { ImportFileError } from "@/server/imports/file";
 import { createOrganization, ensureAttorneyForMember } from "@/server/services/accounts";
 import { loadPortfolio } from "@/server/services/portfolio";
 import { audit } from "@/server/audit";
 import { logger } from "@/server/logger";
 import { PRACTICE_AREAS, type PracticeArea } from "@/lib/taxonomy";
 
-export type ActionResult = { ok?: string; error?: string; id?: string };
-
-/** Uniform error handling: users see a clear message; details go to the server log only. */
-async function run(name: string, fn: () => Promise<ActionResult | void>): Promise<ActionResult> {
-  try {
-    return (await fn()) ?? { ok: "Saved." };
-  } catch (e) {
-    unstable_rethrow(e); // let Next.js redirects and not-found signals through
-    if (e instanceof AuthError) {
-      if (e.code === "unauthenticated") return { error: "Your session has expired. Sign in again to continue." };
-      return { error: e.code === "forbidden" ? e.message || "Your role does not permit this action." : "You do not have access to an organization." };
-    }
-    if (e instanceof LedgerError || e instanceof ImportFileError) return { error: e.message };
-    if (e instanceof ZodError) return { error: e.issues[0]?.message ?? "Check the values entered." };
-    logger.error(`action.${name}.failed`, { err: e });
-    return { error: "Something went wrong and the change was not saved. The error has been logged; please try again." };
-  }
-}
+export type { ActionResult } from "@/server/action-runner";
 
 const num = (v: FormDataEntryValue | null) => {
   const s = String(v ?? "").replace(/[$,\s]/g, "");
@@ -108,6 +91,21 @@ export async function recordOutcomeAction(matterId: string, _: ActionResult, fd:
     revalidatePath(`/app/matters/${matterId}`);
     return { ok: "Outcome recorded. The matter is now closed." };
   });
+}
+
+export async function createMatterAction(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  let id: string | undefined;
+  const res = await run("create_matter", async () => {
+    const ctx = await getOrgContext();
+    const opt = (k: string) => String(fd.get(k) ?? "").trim() || undefined;
+    const m = await createMatter(ctx, newMatterSchema.parse({
+      name: opt("name") ?? "", externalId: opt("externalId"), categoryKey: opt("categoryKey"), leadAttorneyId: opt("leadAttorneyId"),
+      referralName: opt("referralName"), jurisdiction: opt("jurisdiction"), court: opt("court"), openedOn: opt("openedOn") ?? "", proceduralStage: opt("proceduralStage"),
+    }));
+    id = m.id;
+  });
+  if (id) { revalidatePath("/app", "layout"); redirect(`/app/matters/${id}?new=1`); }
+  return res;
 }
 
 /* ------------------------------------------------------------------ imports */
