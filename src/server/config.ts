@@ -9,7 +9,11 @@ function list(v: string | undefined) {
 }
 
 export const config = {
-  get appUrl() { return (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, ""); },
+  get appUrl() {
+    const raw = (process.env.APP_URL ?? "http://localhost:3000").trim().replace(/\/+$/, "");
+    // Tolerate a value entered without the scheme (e.g. "asteric.vercel.app").
+    return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  },
   get isProduction() { return process.env.NODE_ENV === "production"; },
   /** "invite_only" (default): accounts are created through invitations. "open": anyone may create an organization. */
   get signupMode(): "invite_only" | "open" { return process.env.SIGNUP_MODE === "open" ? "open" : "invite_only"; },
