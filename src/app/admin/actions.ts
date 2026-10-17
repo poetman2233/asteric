@@ -61,3 +61,15 @@ export async function cancelOrgDeletionAction(orgId: string): Promise<ActionResu
     revalidatePath("/admin");
   });
 }
+
+/** Creates or regenerates the synthetic demonstration workspace. Touches only the is_demo organization. */
+export async function regenerateDemoAction(): Promise<ActionResult> {
+  return run("admin_seed_demo", async () => {
+    const s = await requireAdmin();
+    const { seedDemo } = await import("@/server/demo/seed");
+    const r = await seedDemo();
+    await audit(systemDb(), { organizationId: null, actorUserId: s.userId, actorLabel: s.user.name, action: "platform.demo_regenerated", summary: `Regenerated the demonstration workspace (${r.matters} synthetic matters)` });
+    revalidatePath("/admin");
+    return { ok: `Demo workspace ready: ${r.matters} synthetic matters.` };
+  });
+}

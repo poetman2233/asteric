@@ -8,11 +8,12 @@ import { accessRequests, matters, memberships, organizations } from "@/server/db
 import { config } from "@/server/config";
 import { Wordmark } from "@/components/ui/Brand";
 import { Card, Kpi } from "@/components/ui/Blocks";
-import { ProvisionForm, DeclineButton } from "./AdminForms";
+import { CancelDeletionButton, ProvisionForm, DeclineButton, RegenerateDemoButton } from "./AdminForms";
 import { logoutAction } from "@/app/(auth)/actions";
 import { date, num } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Administration" };
+export const maxDuration = 60;
 
 /**
  * Platform administration. Deliberately shows only organization metadata and counts:
@@ -83,13 +84,16 @@ export default async function AdminPage() {
                   <td className="ink2">{date(o.createdAt)}</td>
                   <td className="r">{num(o.members)}</td>
                   <td className="r">{num(o.matterCount)}</td>
-                  <td>{o.deletionRequestedAt ? <span className="badge badge-neg">Deletion scheduled {date(new Date(o.deletionRequestedAt.getTime() + 30 * 86400_000))}</span> : <span className="ink2">Active</span>}</td>
+                  <td>{o.deletionRequestedAt ? <span className="row" style={{ gap: 8 }}><span className="badge badge-neg">Deletion scheduled {date(new Date(o.deletionRequestedAt.getTime() + 30 * 86400_000))}</span><CancelDeletionButton orgId={o.id} /></span> : <span className="ink2">Active</span>}</td>
                 </tr>
               ))}</tbody>
             </table>
           </div>
         </Card>
-        <p className="help">Demo workspace: <Link className="link" href="/login">sign in with demo access</Link> to view it as a visitor would. Regenerate it with <span className="mono">npm run seed:demo</span>.</p>
+        <Card title="Demonstration workspace" sub={`Synthetic "Keller & Ross Employment Law" data for investor and prospect demos. ${config.demoEnabled ? "Visitors can enter it from the login page." : "Set DEMO_MODE=enabled to offer it on the login page."} It is regenerated automatically every day.`}>
+          <RegenerateDemoButton exists={orgs.some((o) => o.isDemo)} />
+          <p className="help" style={{ marginTop: 10 }}><Link className="link" href="/login">Open the login page</Link> and choose “Explore the demonstration workspace” to see it as a visitor would.</p>
+        </Card>
       </main>
     </div>
   );

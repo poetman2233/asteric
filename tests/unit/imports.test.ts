@@ -101,3 +101,14 @@ describe("name clustering", () => {
     expect(m.get("Marco Rodriguez")!.confidence).toBeGreaterThan(0.9);
   });
 });
+
+import { errorInfo } from "@/server/logger";
+describe("log redaction", () => {
+  it("drops query parameters from database errors", () => {
+    const e = new Error('Failed query: insert into "matters" ("name") values ($1)\nparams: Okonkwo v. Meridian Logistics');
+    (e as Error & { cause?: unknown }).cause = Object.assign(new Error("duplicate key value violates unique constraint"), { code: "23505" });
+    const info = JSON.stringify(errorInfo(e));
+    expect(info).not.toContain("Okonkwo");
+    expect(info).toContain("23505");
+  });
+});

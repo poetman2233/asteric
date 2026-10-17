@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useTransition } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { provisionOrgAction, setRequestStatusAction } from "./actions";
+import { cancelOrgDeletionAction, provisionOrgAction, regenerateDemoAction, setRequestStatusAction } from "./actions";
 import type { ActionResult } from "@/server/action-runner";
 import { FormMessage, SubmitButton } from "@/components/ui/Form";
 import { PRACTICE_AREAS } from "@/lib/taxonomy";
@@ -29,4 +29,24 @@ export function DeclineButton({ id }: { id: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   return <button type="button" className="btn btn-ghost btn-sm" disabled={pending} onClick={() => start(async () => { await setRequestStatusAction(id, "declined"); router.refresh(); })}>Decline</button>;
+}
+
+export function RegenerateDemoButton({ exists }: { exists: boolean }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<ActionResult>({});
+  return (
+    <div className="stack-sm">
+      <div><button type="button" className="btn btn-secondary" disabled={pending} aria-busy={pending} onClick={() => start(async () => { setMsg(await regenerateDemoAction()); router.refresh(); })}>{pending ? "Generating…" : exists ? "Regenerate demo workspace" : "Create demo workspace"}</button></div>
+      <FormMessage state={msg} />
+    </div>
+  );
+}
+
+export function CancelDeletionButton({ orgId }: { orgId: string }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [confirm, setConfirm] = useState(false);
+  if (!confirm) return <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirm(true)}>Cancel deletion</button>;
+  return <button type="button" className="btn btn-secondary btn-sm" disabled={pending} onClick={() => start(async () => { await cancelOrgDeletionAction(orgId); router.refresh(); })}>Confirm: owner asked to keep it</button>;
 }
