@@ -73,6 +73,7 @@ export function MfaPanel({ enabled }: { enabled: boolean }) {
     return (
       <div className="stack">
         <p className="ink2">Add a second step at sign-in with an authenticator app such as 1Password, Google Authenticator or Microsoft Authenticator. Recommended for every account.</p>
+        <FormMessage state={disableState} />
         {startErr ? <div className="alert alert-error">{startErr}</div> : null}
         <div><button type="button" className="btn btn-primary" disabled={pending} onClick={() => start(async () => { const r = await startMfaAction(); if (r.error) setStartErr(r.error); else setEnroll(r.data as { qr: string; secret: string }); })}>Set up two-factor authentication</button></div>
       </div>
