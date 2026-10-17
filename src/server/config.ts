@@ -17,7 +17,13 @@ export const config = {
   get isProduction() { return process.env.NODE_ENV === "production"; },
   /** "invite_only" (default): accounts are created through invitations. "open": anyone may create an organization. */
   get signupMode(): "invite_only" | "open" { return process.env.SIGNUP_MODE === "open" ? "open" : "invite_only"; },
-  get setupToken() { return process.env.SETUP_TOKEN ?? ""; },
+  get setupToken() { return (process.env.SETUP_TOKEN ?? "").trim(); },
+  /** Compares a setup token from a link, tolerating surrounding spaces and "+" turned into a space by the URL. */
+  setupTokenMatches(candidate: string | null | undefined) {
+    const want = (process.env.SETUP_TOKEN ?? "").trim();
+    const got = (candidate ?? "").trim().replace(/ /g, "+");
+    return Boolean(want) && got === want;
+  },
   get platformAdminEmails() { return list(process.env.PLATFORM_ADMIN_EMAILS); },
   get demoEnabled() { return process.env.DEMO_MODE === "enabled"; },
   get demoAccessCode() { return process.env.DEMO_ACCESS_CODE ?? ""; },

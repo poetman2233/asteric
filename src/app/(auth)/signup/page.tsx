@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Create account" };
 
 export default async function SignupPage({ searchParams }: { searchParams: Promise<{ setup?: string }> }) {
   const { setup } = await searchParams;
-  const adminSetup = Boolean(setup && config.setupToken && setup === config.setupToken);
+  const adminSetup = config.setupTokenMatches(setup);
   if (!adminSetup && config.signupMode !== "open") {
     return (
       <>
@@ -21,7 +21,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
     <>
       <h1 className="auth-title">{adminSetup ? "Create the administrator account" : "Create your firm's workspace"}</h1>
       <p className="auth-sub">{adminSetup ? "First-run setup. This account administers the Asteric deployment; it does not see customer matter data." : "You will be the owner of your organization's workspace."}</p>
-      <SignupForm setup={adminSetup ? setup! : ""} askFirm={!adminSetup} />
+      <SignupForm setup={adminSetup ? config.setupToken : ""} askFirm={!adminSetup} />
     </>
   );
 }

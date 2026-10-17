@@ -113,7 +113,8 @@ export async function signupAction(_: FormState, fd: FormData): Promise<FormStat
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form.", fields };
   const email = normalizeEmail(parsed.data.email);
   const setup = str(fd, "setup");
-  const isAdminSetup = Boolean(config.setupToken) && setup === config.setupToken && config.platformAdminEmails.includes(email);
+  const isAdminSetup = config.setupTokenMatches(setup) && config.platformAdminEmails.includes(email);
+  if (!isAdminSetup && config.setupTokenMatches(setup)) return { error: "This email is not listed in PLATFORM_ADMIN_EMAILS. Use that email, or update the setting in your hosting dashboard and redeploy.", fields };
   if (!isAdminSetup && config.signupMode !== "open") return { error: "Asteric accounts are created by invitation. Request access or ask your administrator for an invite.", fields };
   if (!(await rateLimit(`signup:${await clientIpHash()}`, 10, 3600))) return { error: RATE_LIMITED, fields };
   const pwProblem = passwordProblem(parsed.data.password, email);
