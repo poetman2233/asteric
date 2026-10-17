@@ -209,7 +209,7 @@ p { margin: 0; }
 .filter-chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px; border-radius: 999px; background: var(--frost); color: var(--accent-ink); font-size: 12px; }
 
 /* ---------- KPI tiles ---------- */
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: var(--r-card); overflow: hidden; background: var(--line-soft); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: var(--r-card); overflow: hidden; background: var(--surface); }
 .kpi { background: var(--surface); padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; min-height: 104px; box-shadow: 1px 0 0 var(--line-soft); }
 .kpi-label { font-size: 12px; color: var(--ink-2); display: flex; align-items: center; gap: 6px; }
 .kpi-value { font-size: 24px; font-weight: 550; letter-spacing: -0.025em; line-height: 1.15; }

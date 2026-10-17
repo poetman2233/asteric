@@ -26,12 +26,12 @@ export function CalibrationChart({ points, height = 340 }: { points: CalPoint[];
   return (
     <div className="chart-box" role="img" aria-label={`Calibration curve with ${points.length} probability bands. ${solid.map((d) => `${pctTick(d.lo)}–${pctTick(d.hi)}: predicted ${pctTick(d.x)}, observed ${pctTick(d.y)} (n=${d.n})`).join("; ")}`}>
       <ResponsiveContainer width="100%" height={height}>
-        <ComposedChart margin={{ top: 12, right: 18, bottom: 28, left: 4 }}>
+        <ComposedChart margin={{ top: 12, right: 18, bottom: 28, left: 18 }}>
           <CartesianGrid stroke={C.grid} vertical={false} />
           <XAxis type="number" dataKey="x" domain={[0, 1]} ticks={[0, 0.2, 0.4, 0.6, 0.8, 1]} tickFormatter={pctTick} tick={tick} axisLine={{ stroke: C.grid }} tickLine={false}
             label={{ value: "Predicted probability of favorable resolution", position: "insideBottom", offset: -16, fill: C.axis, fontSize: 11 }} />
           <YAxis type="number" dataKey="y" domain={[0, 1]} ticks={[0, 0.2, 0.4, 0.6, 0.8, 1]} tickFormatter={pctTick} tick={tick} axisLine={false} tickLine={false} width={44}
-            label={{ value: "Observed", angle: -90, position: "insideLeft", offset: 12, fill: C.axis, fontSize: 11 }} />
+            label={{ value: "Observed favorable", angle: -90, position: "left", offset: 6, fill: C.axis, fontSize: 11, style: { textAnchor: "middle" } }} />
           <ReferenceLine segment={[{ x: 0, y: 0 }, { x: 1, y: 1 }]} stroke={C.ref} strokeDasharray="4 4" strokeWidth={1.2} ifOverflow="extendDomain" />
           <Line data={solid} type="linear" dataKey="y" stroke={C.series} strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false} />
           <Scatter data={data} isAnimationActive={false}
@@ -60,9 +60,19 @@ export function CalibrationChart({ points, height = 340 }: { points: CalPoint[];
 /* ------------------------------------------------------------------ horizontal bars */
 export type BarDatum = { key: string; label: string; value: number | null; display: string; detail?: [string, string][]; muted?: boolean };
 
-export function HBarChart({ data, format, reference, referenceLabel, height }: {
-  data: BarDatum[]; format: (v: number) => string; reference?: number | null; referenceLabel?: string; height?: number;
+/** Named formats: functions cannot cross the server→client boundary. */
+export type BarFormat = "multiple" | "brier" | "pct" | "usd";
+const FORMATS: Record<BarFormat, (v: number) => string> = {
+  multiple: (v) => `${v.toFixed(2)}×`,
+  brier: (v) => v.toFixed(3),
+  pct: (v) => `${Math.round(v * 100)}%`,
+  usd: (v) => (Math.abs(v) >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : `$${Math.round(v / 1000)}K`),
+};
+
+export function HBarChart({ data, format: fmt, reference, referenceLabel, height }: {
+  data: BarDatum[]; format: BarFormat; reference?: number | null; referenceLabel?: string; height?: number;
 }) {
+  const format = FORMATS[fmt];
   const rows = data.filter((d) => d.value != null);
   const h = height ?? Math.max(120, rows.length * 34 + 40);
   return (

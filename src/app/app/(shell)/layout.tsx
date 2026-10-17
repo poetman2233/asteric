@@ -13,7 +13,7 @@ export default async function AppShellLayout({ children }: { children: React.Rea
   const ctx = await pageOrgContext();
   const [memberships, portfolio] = [await listMemberships(ctx.user.id), await loadPortfolio(ctx.org.id)];
   const s = ctx.org.settings;
-  const watchCount = portfolioWatch(portfolio.facts, { asOf: todayIso(), staleDays: s.staleDays, expenseThreshold: s.expenseVarianceThreshold }).filter((f) => f.severity !== "low").length;
+  const watchCount = new Set(portfolioWatch(portfolio.facts, { asOf: todayIso(), staleDays: s.staleDays, expenseThreshold: s.expenseVarianceThreshold }).filter((f) => f.severity === "high").map((f) => f.matterId)).size;
   const { events, lastRead } = await withTenant(ctx.org.id, async (tx) => {
     const events = await tx.select().from(auditEvents)
       .where(and(eq(auditEvents.organizationId, ctx.org.id), inArray(auditEvents.action, ACTIVITY_ACTIONS)))

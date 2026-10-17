@@ -68,6 +68,8 @@ const INDUSTRIES = ["Logistics", "Healthcare", "Technology", "Manufacturing", "R
 const SIZES = ["50–199", "200–999", "1,000–4,999", "5,000+"];
 const COURTS: [string, string][] = [["CA", "Los Angeles County Superior Court"], ["CA", "San Francisco County Superior Court"], ["CA", "Orange County Superior Court"], ["CA", "C.D. Cal."], ["CA", "Alameda County Superior Court"], ["CA", "JAMS arbitration"]];
 
+const MAJOR = new Set(["complaint_filed", "discovery_closed", "deposition", "motion_decided", "mediation_held", "expert_retained", "trial_set", "settlement_conference"]);
+
 /* ------------------------------------------------------------------ deterministic randomness */
 function mulberry32(seed: number) {
   return () => {
@@ -78,8 +80,28 @@ function mulberry32(seed: number) {
   };
 }
 
+/** The dataset is generated against a fixed calendar, then shifted so it always ends "today". */
+export const DEMO_ANCHOR = "2026-10-17";
+export const DEMO_SEED = 20190152;
+
 export function generateDemo(opts: { seed?: number; asOf: string; count?: number }): { matters: DemoMatter[] } {
-  const rnd = mulberry32(opts.seed ?? 20190101);
+  const { matters } = generateAnchored({ seed: opts.seed ?? DEMO_SEED, asOf: DEMO_ANCHOR, count: opts.count });
+  const shiftDays = Math.round((Date.parse(`${opts.asOf}T00:00:00Z`) - Date.parse(`${DEMO_ANCHOR}T00:00:00Z`)) / 86400_000);
+  if (!shiftDays) return { matters };
+  const sh = (d: string) => { const x = new Date(`${d}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + shiftDays); return x.toISOString().slice(0, 10); };
+  return {
+    matters: matters.map((m) => ({
+      ...m, openedOn: sh(m.openedOn),
+      predictions: m.predictions.map((p) => ({ ...p, recordedOn: sh(p.recordedOn) })),
+      events: m.events.map((e) => ({ ...e, on: sh(e.on) })),
+      offers: m.offers.map((o) => ({ ...o, on: sh(o.on) })),
+      outcome: m.outcome ? { ...m.outcome, resolvedOn: sh(m.outcome.resolvedOn) } : null,
+    })),
+  };
+}
+
+function generateAnchored(opts: { seed: number; asOf: string; count?: number }): { matters: DemoMatter[] } {
+  const rnd = mulberry32(opts.seed);
   const u = (a: number, b: number) => a + (b - a) * rnd();
   const normal = () => { let x = 0; for (let i = 0; i < 6; i++) x += rnd(); return (x - 3) / Math.sqrt(0.5); };
   const logn = (median: number, sigma: number) => median * Math.exp(sigma * normal());
@@ -92,7 +114,7 @@ export function generateDemo(opts: { seed?: number; asOf: string; count?: number
   const addMonths = (d: string, m: number) => { const x = new Date(`${d}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + Math.round(m * 30.4375)); return iso(x); };
   const start = new Date("2019-01-07T00:00:00Z").getTime();
   const end = asOf.getTime() - 25 * 86400_000;
-  const count = opts.count ?? 640;
+  const count = opts.count ?? 720;
 
   const matters: DemoMatter[] = [];
   const usedNames = new Set<string>();
@@ -106,10 +128,14 @@ export function generateDemo(opts: { seed?: number; asOf: string; count?: number
     const prospective = opened >= "2023-01-01";
 
     // --- the attorney's belief at intake
-    let p = clamp(0.64 + 0.16 * normal(), 0.12, 0.95);
+    let p = clamp(0.64 + 0.2 * normal(), 0.12, 0.95);
     if (attorney.key === "keller") p = clamp(p + 0.06, 0.12, 0.96);
+    // Rodriguez discriminates well: sharper forecasts that track reality.
+    if (attorney.key === "rodriguez") p = clamp(0.55 + (p - 0.55) * 1.5, 0.1, 0.84);
     // Value: predicted midpoint. Pacific and whistleblower matters skew large.
-    const mid = round(clamp(logn(prof.value * (isPacific ? 2.3 : 1), 0.62), 45_000, 4_500_000), 5_000);
+    // A minority of matters are underwritten as high-value (catastrophic damages, executive plaintiffs).
+    const highValue = rnd() < (isPacific ? 0.2 : 0.11);
+    const mid = round(clamp(logn(prof.value * (isPacific ? 2.3 : 1) * (highValue ? 3.4 : 1), 0.62), 45_000, 6_000_000), 5_000);
     const low = round(mid * u(0.7, 0.8), 5_000), high = round(mid * u(1.2, 1.32), 5_000);
     const dPred = Math.max(5, Math.round(prof.duration + (isPacific ? 2 : 0) + normal() * 2.5));
     const ePred = round(prof.expense + 0.045 * mid + normal() * 4_000, 500);
@@ -198,6 +224,15 @@ export function generateDemo(opts: { seed?: number; asOf: string; count?: number
           const reason = pick(["Discovery completed", "Key deposition testimony", "Defendant produced personnel file", "Summary judgment briefing revealed comparator evidence", "Damages expert report received"]);
           predictions.push({ version: 2, recordedOn: reviseOn, low: round(mid2 * 0.8, 5_000), high: round(mid2 * 1.2, 5_000), probability: Math.round(p2 * 100) / 100, durationMonths: Math.round(dPred + (dActual - dPred) * u(0.4, 0.7)), expense: round(ePred + (eActual - ePred) * u(0.4, 0.7), 500), confidence: p2 > 0.75 ? "high" : "medium", drivers: driversFor(p2), reason, source: "prospective", stage: "Post-discovery" });
         }
+      }
+      // Open matters: most attorneys revisit their estimate after the latest major event.
+      const lastMajor = [...events].filter((e) => MAJOR.has(e.type) && e.on <= opts.asOf).sort((a, b) => a.on.localeCompare(b.on)).pop();
+      const prev = predictions[predictions.length - 1];
+      const reviewOn = lastMajor ? addMonths(lastMajor.on, u(0.15, 1.8)) : null;
+      if (!closed && prev && reviewOn && reviewOn > prev.recordedOn && reviewOn <= opts.asOf && rnd() < 0.74) {
+        const pr = clamp(prev.probability + (favorable ? u(-0.02, 0.08) : -u(0.02, 0.12)), 0.08, 0.96);
+        const midR = round((prev.low + prev.high) / 2 * (favorable ? u(0.95, 1.12) : u(0.75, 0.95)), 5_000);
+        predictions.push({ version: prev.version + 1, recordedOn: reviewOn, low: round(midR * 0.8, 5_000), high: round(midR * 1.2, 5_000), probability: Math.round(pr * 100) / 100, durationMonths: Math.round((prev.durationMonths ?? dPred) + Math.max(0, dActual - (prev.durationMonths ?? dPred)) * u(0.3, 0.6)), expense: round((prev.expense ?? ePred) + Math.max(0, eActual - (prev.expense ?? ePred)) * u(0.3, 0.6), 500), confidence: pr > 0.75 ? "high" : "medium", drivers: driversFor(pr), reason: pick(["Reviewed after mediation", "Updated after deposition testimony", "Reviewed after motion ruling", "Quarterly portfolio review", "Updated after expert retention"]), source: "prospective", stage: stageAt(progress) });
       }
     } else if (rnd() < 0.36) {
       predictions.push({ version: 1, recordedOn: intakeOn, low, high, probability: Math.round(p * 20) / 20, durationMonths: rnd() < 0.6 ? dPred : null, expense: rnd() < 0.5 ? ePred : null, confidence: null, drivers: [], reason: null, source: "historical", stage: "Intake" });
