@@ -7,15 +7,18 @@ export type WatchFlag = {
   matterId: string; matterName: string; attorneyName: string | null;
   kind: WatchKind; severity: "high" | "medium" | "low";
   title: string; detail: string; metric: string | null; sortValue: number;
+
+  /** Original assumption → current reality → variance, for review. */
+  assumption?: string; reality?: string; variance?: string; lastAssessmentDays?: number | null;
 };
 
 export const WATCH_LABEL: Record<WatchKind, string> = {
   expense_variance: "Expense variance",
   duration_exceeded: "Duration exceeded",
   duration_approaching: "Duration approaching forecast",
-  unrevised_major_event: "Major event since latest prediction",
-  stale_prediction: "Prediction not reviewed recently",
-  no_prediction: "No recorded prediction",
+  unrevised_major_event: "Major event since latest assessment",
+  stale_prediction: "Assessment not reviewed recently",
+  no_prediction: "No recorded assessment",
   missing_fields: "Key fields missing",
 };
 
@@ -41,14 +44,14 @@ export function portfolioWatch(ms: MatterFact[], opts: { asOf: string; staleDays
       flags.push({ ...base, kind: "missing_fields", severity: "low", title: "Key fields missing", detail: `Missing ${missing}.`, metric: null, sortValue: 0 });
     }
     if (!latest) {
-      flags.push({ ...base, kind: "no_prediction", severity: "medium", title: "No recorded prediction", detail: "This active matter has no recorded expectation to measure against.", metric: null, sortValue: m.openedOn ? daysBetween(m.openedOn, opts.asOf) : 0 });
+      flags.push({ ...base, kind: "no_prediction", severity: "medium", title: "No recorded assessment", assumption: "None recorded", reality: m.openedOn ? `Open since ${m.openedOn}` : "Open", variance: "—", lastAssessmentDays: null, detail: "This active matter has no recorded expectation to measure against.", metric: null, sortValue: m.openedOn ? daysBetween(m.openedOn, opts.asOf) : 0 });
       continue;
     }
     const age = daysBetween(latest.recordedAt.slice(0, 10), opts.asOf);
     if (m.expensesToDate != null && latest.expectedExpense != null && latest.expectedExpense > 0) {
       const v = m.expensesToDate / latest.expectedExpense - 1;
       if (v > opts.expenseThreshold) {
-        flags.push({ ...base, kind: "expense_variance", severity: v > 0.5 ? "high" : "medium", title: "Expense variance",
+        flags.push({ ...base, kind: "expense_variance", severity: v > 0.5 ? "high" : "medium", title: "Expense variance", assumption: `Expected expense ${usd(latest.expectedExpense)}`, reality: `${usd(m.expensesToDate)} incurred`, variance: pct(v), lastAssessmentDays: age,
           detail: `Incurred ${usd(m.expensesToDate)} against a latest predicted expense of ${usd(latest.expectedExpense)}. Latest prediction: ${age} days ago.`, metric: pct(v), sortValue: v });
       }
     }
@@ -56,21 +59,21 @@ export function portfolioWatch(ms: MatterFact[], opts: { asOf: string; staleDays
       const elapsed = monthsBetween(m.openedOn, opts.asOf);
       const expected = latest.expectedDurationMonths ?? 0;
       if (expected > 0 && elapsed > expected) {
-        flags.push({ ...base, kind: "duration_exceeded", severity: elapsed > expected * 1.25 ? "high" : "medium", title: "Duration exceeded",
+        flags.push({ ...base, kind: "duration_exceeded", severity: elapsed > expected * 1.25 ? "high" : "medium", title: "Duration exceeded", assumption: `Expected ${expected.toFixed(0)} months`, reality: `Open ${elapsed.toFixed(1)} months`, variance: `+${(elapsed - expected).toFixed(1)} mo`, lastAssessmentDays: age,
           detail: `Open ${elapsed.toFixed(1)} months against an expected total duration of ${expected.toFixed(1)} months.`, metric: `+${(elapsed - expected).toFixed(1)} mo`, sortValue: elapsed / expected });
       } else if (expected > 0 && elapsed >= expected * 0.9) {
-        flags.push({ ...base, kind: "duration_approaching", severity: "low", title: "Duration approaching forecast",
+        flags.push({ ...base, kind: "duration_approaching", severity: "low", title: "Duration approaching forecast", assumption: `Expected ${expected.toFixed(0)} months`, reality: `Open ${elapsed.toFixed(1)} months`, variance: `${Math.round((elapsed / expected) * 100)}% elapsed`, lastAssessmentDays: age,
           detail: `Open ${elapsed.toFixed(1)} of an expected ${expected.toFixed(1)} months.`, metric: `${Math.round((elapsed / expected) * 100)}%`, sortValue: elapsed / expected });
       }
     }
     const after = m.events.filter((e) => MAJOR_EVENTS.has(e.type) && e.occurredOn > latest.recordedAt.slice(0, 10) && e.occurredOn <= opts.asOf);
     if (after.length) {
       const last = after[after.length - 1]!;
-      flags.push({ ...base, kind: "unrevised_major_event", severity: "medium", title: "Major event since latest prediction",
+      flags.push({ ...base, kind: "unrevised_major_event", severity: "medium", title: "Major event since latest assessment", assumption: `Assessed ${latest.recordedAt.slice(0, 10)}`, reality: `${EVENT_LABEL[last.type] ?? last.type} on ${last.occurredOn}`, variance: `${after.length} event${after.length > 1 ? "s" : ""} since`, lastAssessmentDays: age,
         detail: `${EVENT_LABEL[last.type] ?? last.type} on ${last.occurredOn}; no revision recorded since.`, metric: `${after.length} event${after.length > 1 ? "s" : ""}`, sortValue: after.length });
     }
     if (age > opts.staleDays) {
-      flags.push({ ...base, kind: "stale_prediction", severity: "low", title: "Prediction not reviewed recently",
+      flags.push({ ...base, kind: "stale_prediction", severity: "low", title: "Assessment not reviewed recently", assumption: `Assessed ${latest.recordedAt.slice(0, 10)}`, reality: "No confirmation since", variance: `${age} days`, lastAssessmentDays: age,
         detail: `Latest prediction recorded ${age} days ago.`, metric: `${age} d`, sortValue: age });
     }
   }

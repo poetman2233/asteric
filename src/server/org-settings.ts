@@ -18,6 +18,12 @@ export type OrgSettings = {
   analystsSeePredictionAuthors: boolean;
   /** Allow sending column headers to the configured AI provider for mapping suggestions. Off by default. */
   aiAssistEnabled: boolean;
+  /** Procedural event types that open a Decision Moment. */
+  momentEventTypes: string[];
+  /** Open a Decision Moment when a defense offer is recorded. */
+  momentOnOffers: boolean;
+  /** Open a Decision Moment when expenses increase by at least this amount at once. Null = off. */
+  momentExpenseThreshold: number | null;
   /** Network participation. Always "not_enrolled" in V1: contribution is not yet offered. */
   networkParticipation: "not_enrolled";
 };
@@ -30,6 +36,9 @@ export const DEFAULT_ORG_SETTINGS: OrgSettings = {
   expenseVarianceThreshold: 0.25,
   analystsSeePredictionAuthors: true,
   aiAssistEnabled: false,
+  momentEventTypes: ["mediation_scheduled", "mediation_held", "discovery_closed", "deposition", "motion_filed", "motion_decided", "trial_set", "settlement_conference"],
+  momentOnOffers: true,
+  momentExpenseThreshold: 10_000,
   networkParticipation: "not_enrolled",
 };
 

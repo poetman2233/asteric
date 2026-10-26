@@ -17,6 +17,8 @@ export type PredictionFact = {
   authorLabel: string;
   revisionReason?: string | null;
   proceduralStage?: string | null;
+  /** A "no change" confirmation that repeats the previous version's values. */
+  isReaffirmation?: boolean;
 };
 
 export type OutcomeFact = {

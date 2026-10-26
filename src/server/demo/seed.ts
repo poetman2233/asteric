@@ -5,7 +5,9 @@ import { systemDb } from "@/server/db";
 import {
   attorneys, auditEvents, categories, imports, importValueReviews, matters, memberships, offers, organizations, outcomes,
   predictions, proceduralEvents, provenance, referralSources, savedViews, users,
+  decisionMoments, decisions, inboxActions, intakeDecisions, monitoredPatterns, reviewRules,
 } from "@/server/db/schema";
+import { MOMENT_TYPES } from "@/lib/moments";
 import { DEFAULT_CATEGORIES } from "@/lib/taxonomy";
 import { DEFAULT_ORG_SETTINGS } from "@/server/org-settings";
 import { ATTORNEYS, generateDemo, SOURCES, type DemoMatter } from "./generate";
@@ -46,7 +48,7 @@ export async function seedDemo(opts: { asOf?: string } = {}) {
     const orgId = org.id;
 
     // Wipe generated data (cascades to predictions, events, offers, outcomes).
-    for (const t of [matters, attorneys, referralSources, imports, provenance, auditEvents, savedViews]) {
+    for (const t of [inboxActions, decisionMoments, decisions, reviewRules, intakeDecisions, monitoredPatterns, matters, attorneys, referralSources, imports, provenance, auditEvents, savedViews]) {
       await tx.delete(t).where(eq(t.organizationId, orgId));
     }
 
@@ -152,6 +154,8 @@ export async function seedDemo(opts: { asOf?: string } = {}) {
     for (const c of chunks(provVals, 1000)) await tx.insert(provenance).values(c);
     for (const c of chunks(audVals, 1000)) await tx.insert(auditEvents).values(c);
 
+    await seedWorkflow(tx, { orgId, asOf, demo, ids, pVals, eVals, attId, attName, refId, cats });
+
     return { orgId, demoUserId: demoUser.id, matters: mVals.length, predictions: pVals.length, events: eVals.length, outcomes: outVals.length, asOf };
   });
 }
@@ -175,3 +179,119 @@ export async function resetDemoSandbox() {
     return { deleted: res.length };
   });
 }
+
+/* ------------------------------------------------------------------ V2 workflow stories */
+type SeedCtx = {
+  orgId: string; asOf: string; demo: DemoMatter[]; ids: Map<string, string>;
+  pVals: { id?: string; matterId: string; version: number; recordedAt?: Date | string | null; authorLabel: string; recoveryLow: number; recoveryHigh: number; isReaffirmation?: boolean | null; source?: string | null }[];
+  eVals: { matterId: string; type: string; occurredOn: string; title: string }[];
+  attId: Map<string, string>; attName: Map<string, string>; refId: Map<string, string>; cats: Map<string, string>;
+};
+
+async function seedWorkflow(tx: Parameters<Parameters<ReturnType<typeof systemDb>["transaction"]>[0]>[0], c: SeedCtx) {
+  const day = 86400_000;
+  const asOfT = Date.parse(`${c.asOf}T12:00:00Z`);
+  const ago = (d: number) => new Date(asOfT - d * day);
+  const keller = c.attName.get("keller")!, ross = c.attName.get("ross")!;
+  const byMatter = new Map<string, SeedCtx["pVals"]>();
+  for (const p of c.pVals) byMatter.set(p.matterId, [...(byMatter.get(p.matterId) ?? []), p]);
+  const latestSub = (mid: string) => [...(byMatter.get(mid) ?? [])].filter((p) => !p.isReaffirmation).sort((a, b) => b.version - a.version)[0];
+  const at = (x: Date | string | null | undefined) => (x instanceof Date ? x : new Date(String(x)));
+
+  // 1. Firm decisions: every prospective matter was accepted at intake.
+  const dVals: (typeof decisions.$inferInsert)[] = [];
+  for (const m of c.demo) {
+    const id = c.ids.get(m.externalId)!;
+    const v1 = (byMatter.get(id) ?? []).find((p) => p.version === 1);
+    if (!m.imported) dVals.push({ organizationId: c.orgId, matterId: id, type: "accept", reason: "Accepted at intake", predictionId: v1?.id ?? null, decidedLabel: c.attName.get(m.attorney)!, decidedAt: new Date(`${m.openedOn}T18:00:00Z`) });
+  }
+  // Okonkwo: the full belief → decision → capital → outcome record.
+  const ok = c.ids.get("KR-1182")!, okPreds = byMatter.get(ok) ?? [];
+  const okV2 = okPreds.find((p) => p.version === 2);
+  const okDate = (iso: string) => { const base = c.demo.find((m) => m.externalId === "KR-1182")!; const shift = Date.parse(`${base.openedOn}T00:00:00Z`) - Date.parse("2024-03-14T00:00:00Z"); return new Date(Date.parse(`${iso}T17:00:00Z`) + shift); };
+  dVals.push(
+    { organizationId: c.orgId, matterId: ok, type: "continue_investment", reason: "Continue through mediation after discovery corroborated the client's account.", predictionId: okV2?.id ?? null, capitalAmount: 15_000, decidedLabel: ross, decidedAt: okDate("2024-10-09") },
+    { organizationId: c.orgId, matterId: ok, type: "offer_response", reason: "Declined the $220,000 offer; below the assessed range.", predictionId: okV2?.id ?? null, decidedLabel: ross, decidedAt: okDate("2025-01-16") },
+    { organizationId: c.orgId, matterId: ok, type: "offer_response", reason: "Declined the $380,000 offer at mediation.", predictionId: okV2?.id ?? null, decidedLabel: ross, decidedAt: okDate("2025-06-24") },
+    { organizationId: c.orgId, matterId: ok, type: "offer_response", reason: "Accepted $475,000, inside the latest assessed range.", predictionId: okV2?.id ?? null, decidedLabel: ross, decidedAt: okDate("2025-08-08") },
+  );
+  const dg = c.ids.get("KR-1843")!;
+  dVals.push({ organizationId: c.orgId, matterId: dg, type: "approve_expense", reason: "Approved statistical expert for comparator analysis.", capitalAmount: 18_000, predictionId: latestSub(dg)?.id ?? null, decidedLabel: keller, decidedAt: ago(200) });
+
+  // 2. Review rules created by management, two of them from Firm Learning findings.
+  const pacific = c.refId.get("pacific")!;
+  const [ruleValue] = await tx.insert(reviewRules).values({ organizationId: c.orgId, name: "Second assessment for matters forecast at $1M or more", type: "high_value", params: { amount: 1_000_000 }, sourceInsight: "valuation-gt1m", createdByLabel: keller, createdAt: ago(75), updatedAt: ago(75) }).returning();
+  const [ruleRef] = await tx.insert(reviewRules).values({ organizationId: c.orgId, name: "Second review for new Pacific Labor Referral Group matters", type: "referral_review", params: { referralIds: [pacific] }, sourceInsight: `referral-${pacific}`, createdByLabel: keller, createdAt: ago(60), updatedAt: ago(60) }).returning();
+
+  // Existing high-value and under-review matters were reviewed when the rules took effect, except the new stories.
+  for (const m of c.demo) {
+    if (m.status !== "open" || ["KR-1902", "KR-1903"].includes(m.externalId)) continue;
+    const id = c.ids.get(m.externalId)!, sub = latestSub(id);
+    if (!sub) continue;
+    const highValue = (sub.recoveryLow + sub.recoveryHigh) / 2 >= 1_000_000;
+    const newPacific = m.source === "pacific" && m.openedOn >= ago(60).toISOString().slice(0, 10);
+    if (!highValue && !newPacific) continue;
+    const reviewer = sub.authorLabel === keller ? ross : keller;
+    const when = new Date(Math.max(at(sub.recordedAt).getTime() + day, (highValue ? ago(74) : ago(59)).getTime()));
+    dVals.push({ organizationId: c.orgId, matterId: id, type: "second_review", reason: highValue ? "Second assessment reviewed with lead attorney under the $1M rule." : "Reviewed under the referral-source rule.", predictionId: sub.id ?? null, decidedLabel: reviewer, decidedAt: when });
+  }
+  for (const ch of chunk(dVals, 500)) await tx.insert(decisions).values(ch);
+
+  // 3. Open Decision Moments: recent developments on open matters since their latest assessment.
+  const momentTypes = new Set(MOMENT_TYPES.map((t) => t.key));
+  const mVals: (typeof decisionMoments.$inferInsert)[] = [];
+  for (const m of c.demo) {
+    if (m.status !== "open") continue;
+    const id = c.ids.get(m.externalId)!;
+    const last = [...(byMatter.get(id) ?? [])].sort((a, b) => b.version - a.version)[0];
+    const since = last ? at(last.recordedAt).toISOString().slice(0, 10) : "0000";
+    const ev = [...m.events].reverse().find((e) => momentTypes.has(e.type as never) && e.on > since && Date.parse(e.on) >= asOfT - 10 * day);
+    if (ev && last) mVals.push({ organizationId: c.orgId, matterId: id, type: ev.type, source: "event", note: ev.title, createdAt: new Date(`${ev.on}T19:00:00Z`) });
+  }
+  if (mVals.length) await tx.insert(decisionMoments).values(mVals);
+
+  // 3b. The firm has already worked most of its inbox: earlier drift and stale items were confirmed
+  // by the lead attorney. A few remain open alongside the three stories.
+  const keep = new Set(["KR-1843"]);
+  const aVals: (typeof inboxActions.$inferInsert)[] = [];
+  for (const m of c.demo) {
+    if (m.status !== "open" || keep.has(m.externalId)) continue;
+    const id = c.ids.get(m.externalId)!, sub = latestSub(id);
+    const last = [...(byMatter.get(id) ?? [])].sort((a, b) => b.version - a.version)[0];
+    if (!sub || !last) continue;
+    const n = Number(m.externalId.replace(/\D/g, "")) || 0;
+    const label = c.attName.get(m.attorney)!, when = ago(8 + (n % 40));
+    const confirm = (key: string) => aVals.push({ organizationId: c.orgId, itemKey: key, matterId: id, action: "confirmed", reason: "Reviewed; assessment still reflects the matter.", createdByLabel: label, createdAt: when });
+    if (n % 7 !== 0) confirm(`expense:${id}:${sub.id}`);
+    if (n % 9 !== 0) confirm(`duration:${id}:${sub.id}`);
+    if (n % 8 !== 0) confirm(`stale:${id}:${last.id}`);
+  }
+  for (const ch of chunk(aVals, 500)) await tx.insert(inboxActions).values(ch);
+
+  // 4. Declined and referred intake (lightweight; synthetic).
+  const rnd = seeded(4242);
+  const reasons: [string, number][] = [["damages", 26], ["liability", 22], ["limitations", 9], ["capacity", 11], ["outside_practice", 8], ["client_fit", 7], ["economics", 12], ["conflict", 3], ["other", 2]];
+  const catKeys = [...c.cats.keys()], refKeys = [...c.refId.keys()], attKeys = [...c.attId.keys()];
+  const iVals: (typeof intakeDecisions.$inferInsert)[] = [];
+  for (let i = 0; i < 168; i++) {
+    const daysAgo = Math.floor(rnd() * 1300);
+    const reason = pickW(reasons, rnd);
+    iVals.push({ organizationId: c.orgId, receivedOn: ago(daysAgo).toISOString().slice(0, 10), categoryId: c.cats.get(catKeys[Math.floor(rnd() * catKeys.length)]!) ?? null,
+      referralSourceId: rnd() < 0.8 ? c.refId.get(refKeys[Math.floor(rnd() * refKeys.length)]!) ?? null : null, attorneyId: c.attId.get(attKeys[Math.floor(rnd() * attKeys.length)]!) ?? null,
+      jurisdiction: "CA", disposition: reason === "outside_practice" || reason === "capacity" || reason === "conflict" ? "referred" : "rejected", reasonCode: reason,
+      likelihood: rnd() < 0.55 ? (["low", "below_even", "even"] as const)[Math.floor(rnd() * 3)] : null, decidedLabel: c.attName.get(attKeys[Math.floor(rnd() * attKeys.length)]!)!, createdAt: ago(daysAgo) });
+  }
+  await tx.insert(intakeDecisions).values(iVals);
+
+  // 5. A pattern management is monitoring, and the audit trail for the stories.
+  await tx.insert(monitoredPatterns).values({ organizationId: c.orgId, insightId: "duration-retaliation", label: "Retaliation matters have taken longer than initially forecast.", createdAt: ago(40) });
+  await tx.insert(auditEvents).values([
+    { organizationId: c.orgId, actorLabel: keller, action: "rule.created", summary: `Created review rule "${ruleValue!.name}" from a Firm Learning finding`, metadata: { synthetic: true }, createdAt: ago(75) },
+    { organizationId: c.orgId, actorLabel: keller, action: "rule.created", summary: `Created review rule "${ruleRef!.name}" from a Firm Learning finding`, metadata: { synthetic: true }, createdAt: ago(60) },
+    { organizationId: c.orgId, actorLabel: keller, action: "learning.monitored", summary: "Monitoring pattern: retaliation matters have taken longer than initially forecast", metadata: { synthetic: true }, createdAt: ago(40) },
+  ]);
+}
+
+function chunk<T>(xs: T[], n: number) { return Array.from({ length: Math.ceil(xs.length / n) }, (_, i) => xs.slice(i * n, i * n + n)); }
+function seeded(seed: number) { return () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }; }
+function pickW(items: [string, number][], r: () => number) { const t = items.reduce((a, [, w]) => a + w, 0); let x = r() * t; for (const [v, w] of items) { x -= w; if (x <= 0) return v; } return items[0]![0]; }

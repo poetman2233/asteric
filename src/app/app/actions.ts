@@ -47,7 +47,7 @@ export async function recordPredictionAction(matterId: string, _: ActionResult, 
     });
     const p = await recordPrediction(ctx, matterId, input);
     revalidatePath(`/app/matters/${matterId}`);
-    return { ok: p.version > 1 ? `Revision v${p.version} recorded. Earlier predictions are preserved.` : "Prediction recorded and locked.", id: p.id };
+    return { ok: p.version > 1 ? `Assessment v${p.version} recorded. Earlier versions are preserved.` : "Assessment recorded and locked.", id: p.id };
   });
 }
 
@@ -55,27 +55,30 @@ export async function addEventAction(matterId: string, _: ActionResult, fd: Form
   return run("add_event", async () => {
     const ctx = await getOrgContext();
     const amount = num(fd.get("amount"));
-    await addEvent(ctx, matterId, eventSchema.parse({ type: fd.get("type"), occurredOn: fd.get("occurredOn"), title: fd.get("title"), description: String(fd.get("description") ?? "") || undefined, amount: amount ?? undefined }));
+    const ev = await addEvent(ctx, matterId, eventSchema.parse({ type: fd.get("type"), occurredOn: fd.get("occurredOn"), title: fd.get("title"), description: String(fd.get("description") ?? "") || undefined, amount: amount ?? undefined }));
     revalidatePath(`/app/matters/${matterId}`);
-    return { ok: "Event added to the ledger." };
+    revalidatePath("/app", "layout");
+    return { ok: "Event added to the ledger.", data: { momentId: ev.momentId } };
   });
 }
 
 export async function addOfferAction(matterId: string, _: ActionResult, fd: FormData): Promise<ActionResult> {
   return run("add_offer", async () => {
     const ctx = await getOrgContext();
-    await addOffer(ctx, matterId, offerSchema.parse({ direction: fd.get("direction"), amount: num(fd.get("amount")), offeredOn: fd.get("offeredOn"), notes: String(fd.get("notes") ?? "") || undefined }));
+    const o = await addOffer(ctx, matterId, offerSchema.parse({ direction: fd.get("direction"), amount: num(fd.get("amount")), offeredOn: fd.get("offeredOn"), notes: String(fd.get("notes") ?? "") || undefined }));
     revalidatePath(`/app/matters/${matterId}`);
-    return { ok: "Offer recorded." };
+    revalidatePath("/app", "layout");
+    return { ok: "Offer recorded.", data: { momentId: o.momentId } };
   });
 }
 
 export async function updateFinancialsAction(matterId: string, _: ActionResult, fd: FormData): Promise<ActionResult> {
   return run("update_financials", async () => {
     const ctx = await getOrgContext();
-    await updateFinancials(ctx, matterId, financialSchema.parse({ expensesToDate: num(fd.get("expensesToDate")), attorneyHours: num(fd.get("attorneyHours")) }));
+    const r = await updateFinancials(ctx, matterId, financialSchema.parse({ expensesToDate: num(fd.get("expensesToDate")), attorneyHours: num(fd.get("attorneyHours")) }));
     revalidatePath(`/app/matters/${matterId}`);
-    return { ok: "Financials updated." };
+    revalidatePath("/app", "layout");
+    return { ok: "Financials updated.", data: { momentId: r.momentId } };
   });
 }
 

@@ -7,7 +7,7 @@ import { SelectParam } from "@/components/app/UrlControls";
 import { Card, Empty, Kpi, PageHead } from "@/components/ui/Blocks";
 import { date, months, num, pct, range, usd } from "@/lib/format";
 
-export const metadata: Metadata = { title: "Predictions" };
+export const metadata: Metadata = { title: "Assessments" };
 
 const PAGE = 50;
 const SOURCE_LABEL = { prospective: "Prospective", historical: "Historical", sandbox: "Sandbox" } as const;
@@ -31,30 +31,30 @@ export default async function PredictionsPage({ searchParams }: { searchParams: 
 
   return (
     <>
-      <PageHead title="Predictions" sub="Every recorded prediction across the firm. Predictions are append-only: revisions are new versions, and earlier versions are never changed."
-        actions={ctx.can("predictions.create") || ctx.role === "demo" ? <Link className="btn btn-primary" href="/app/matters?status=open&hint=record">Record a prediction</Link> : null} />
+      <PageHead title="Assessments" sub="Every assessment recorded across the firm, including no-change confirmations. Assessments are append-only: updates are new versions, and earlier versions are never changed."
+        actions={ctx.can("predictions.create") || ctx.role === "demo" ? <Link className="btn btn-primary" href="/app/matters?status=open&hint=record">Record an assessment</Link> : null} />
       <div className="stack-lg">
         <div className="kpis">
           <Kpi label="Coverage of open matters" value={open.length ? pct(covered / open.length) : "—"} foot={`${num(covered)} of ${num(open.length)} open matters`} />
-          <Kpi label="Recorded in the last 90 days" value={num(last90)} foot="Prospective predictions and revisions" />
+          <Kpi label="Recorded in the last 90 days" value={num(last90)} foot="Assessments, updates and confirmations" />
           <Kpi label="Matters revised" value={num(rev.revised)} foot={`${num(rev.revisions)} revisions in total`} />
           <Kpi label="Median probability change" value={rev.medianAbsDelta != null ? `${Math.round(rev.medianAbsDelta * 100)} pts` : "—"} foot={`${num(rev.upProb)} raised · ${num(rev.downProb)} lowered`} />
         </div>
-        <Card title="Prediction log" pad={false} actions={<>
+        <Card title="Assessment log" pad={false} actions={<>
           <SelectParam param="source" label="Source" options={[{ value: "", label: "All sources" }, { value: "prospective", label: "Prospective" }, { value: "historical", label: "Historical (imported)" }, ...(ctx.org.isDemo ? [{ value: "sandbox", label: "Sandbox" }] : [])]} />
           <SelectParam param="author" label="Author" options={[{ value: "", label: "All authors" }, ...p.attorneys.map((a) => ({ value: a.id, label: a.name }))]} />
         </>}>
           {rows.length ? (
             <div className="table-wrap" style={{ border: 0, borderRadius: 0 }}>
               <table className="table">
-                <caption className="sr-only">Prediction log, newest first</caption>
+                <caption className="sr-only">Assessment log, newest first</caption>
                 <thead><tr><th>Recorded</th><th>Matter</th><th>Version</th><th>Author</th><th className="r">Range</th><th className="r">Favorable</th><th className="r">Duration</th><th className="r">Expense</th><th>Confidence</th><th>Source</th></tr></thead>
                 <tbody>
                   {rows.slice((page - 1) * PAGE, page * PAGE).map(({ m, x }) => (
                     <tr key={x.id} className="clickable">
                       <td className="num ink2">{date(x.recordedAt)}</td>
                       <td><Link className="cell-primary" style={{ display: "block" }} href={`/app/matters/${m.id}`}>{m.name}</Link><span className="cell-sub">{m.status === "open" ? "Open" : "Closed"}</span></td>
-                      <td>v{x.version}</td>
+                      <td>v{x.version}{x.isReaffirmation ? <span className="cell-sub">No change</span> : null}</td>
                       <td className="ink2">{x.authorLabel}</td>
                       <td className="r">{range(x.recoveryLow, x.recoveryHigh)}</td>
                       <td className="r">{pct(x.probability)}</td>
@@ -67,7 +67,7 @@ export default async function PredictionsPage({ searchParams }: { searchParams: 
                 </tbody>
               </table>
               <div className="table-foot">
-                <span>{num(rows.length)} predictions</span>
+                <span>{num(rows.length)} assessments</span>
                 <span className="row" style={{ gap: 8 }}>
                   {page > 1 ? <Link className="btn btn-secondary btn-sm" href={`/app/predictions${qs(page - 1)}`}>Previous</Link> : null}
                   <span>Page {page} of {pages}</span>
@@ -76,7 +76,7 @@ export default async function PredictionsPage({ searchParams }: { searchParams: 
               </div>
             </div>
           ) : (
-            <div className="card-body"><Empty title="No predictions recorded" actions={[{ href: "/app/matters?status=open&hint=record", label: "Choose a matter" }]}>Open a matter and record the expected recovery range, probability, duration and expense. It takes under a minute.</Empty></div>
+            <div className="card-body"><Empty title="No assessments recorded" actions={[{ href: "/app/matters?status=open&hint=record", label: "Choose a matter" }]}>Open a matter and choose Assess matter. It takes about 30 seconds.</Empty></div>
           )}
         </Card>
       </div>

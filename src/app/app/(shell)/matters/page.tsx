@@ -85,7 +85,7 @@ export default async function MattersPage({ searchParams }: { searchParams: Prom
     <>
       <PageHead title="Matters" sub="Every matter, its recorded predictions and what happened."
         actions={<>{ctx.can("data.export") ? <a className="btn btn-secondary" href={`/app/export/matters${filterToQuery(f)}`}>Export CSV</a> : null}{ctx.can("matters.edit") && !ctx.org.isDemo ? <Link className="btn btn-primary" href="/app/matters/new">New matter</Link> : null}</>} />
-      {sp.hint === "record" ? <div className="alert alert-info" style={{ marginBottom: 14 }}><span>Choose an open matter to record or revise its prediction.</span></div> : null}
+      {sp.hint === "record" ? <div className="alert alert-info" style={{ marginBottom: 14 }}><span>Choose an open matter to assess or review it.</span></div> : null}
       <FilterBar options={{ categories: p.categories, attorneys: p.attorneys, referrals: p.referrals, jurisdictions: p.jurisdictions }} extra={<SearchBox />} />
       {chips.length ? (
         <div className="row-wrap" style={{ marginBottom: 12 }}>
@@ -105,7 +105,7 @@ export default async function MattersPage({ searchParams }: { searchParams: Prom
               <th>Referral source</th>
               <Th k="opened">Opened</Th>
               <th>Status</th>
-              <Th k="value" r>Latest prediction</Th>
+              <Th k="value" r>Latest assessment</Th>
               <Th k="expenses" r>Expenses</Th>
               <Th k="gross" r>Recovery</Th>
             </tr>

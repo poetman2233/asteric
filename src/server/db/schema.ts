@@ -234,6 +234,11 @@ export const predictions = pgTable("predictions", {
   revisionReason: text("revision_reason"),
   source: predictionSourceEnum("source").notNull().default("prospective"),
   supersedesId: uuid("supersedes_id"),
+  /** The attorney's answers in the quick-assessment flow, kept beside the structured result. */
+  assessmentInputs: jsonb("assessment_inputs"),
+  /** A timestamped "no change" confirmation: same values as the previous version. */
+  isReaffirmation: boolean("is_reaffirmation").notNull().default(false),
+  momentId: uuid("moment_id"),
   createdAt: createdAt(),
 }, (t) => [
   uniqueIndex("predictions_matter_version_uq").on(t.matterId, t.version),
@@ -395,6 +400,103 @@ export const savedViews = pgTable("saved_views", {
   query: text("query").notNull(),
   createdAt: createdAt(),
 }, (t) => [index("saved_views_user_idx").on(t.organizationId, t.userId)]);
+
+/* ---------------------------------------------------------------- V2: decision workflow */
+/** A point at which the firm's judgment should be reconfirmed (event, offer, expense, manual, integration). */
+export const decisionMoments = pgTable("decision_moments", {
+  id: id(),
+  organizationId: orgId(),
+  matterId: uuid("matter_id").notNull().references(() => matters.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  source: text("source").notNull().default("event"),
+  eventId: uuid("event_id"),
+  offerId: uuid("offer_id"),
+  note: text("note"),
+  status: text("status").notNull().default("open"),
+  resolution: text("resolution"),
+  predictionId: uuid("prediction_id"),
+  createdBy: uuid("created_by"),
+  createdAt: createdAt(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  resolvedBy: uuid("resolved_by"),
+}, (t) => [index("moments_org_status_idx").on(t.organizationId, t.status), index("moments_matter_idx").on(t.organizationId, t.matterId)]);
+
+/** Append-only log of what people did with Decision Inbox items. The latest action per item key applies. */
+export const inboxActions = pgTable("inbox_actions", {
+  id: id(),
+  organizationId: orgId(),
+  itemKey: text("item_key").notNull(),
+  matterId: uuid("matter_id").references(() => matters.id, { onDelete: "cascade" }),
+  action: text("action").notNull(),
+  assignedTo: uuid("assigned_to"),
+  snoozeUntil: timestamp("snooze_until", { withTimezone: true }),
+  reason: text("reason"),
+  createdBy: uuid("created_by"),
+  createdByLabel: text("created_by_label"),
+  createdAt: createdAt(),
+}, (t) => [index("inbox_actions_key_idx").on(t.organizationId, t.itemKey, t.createdAt)]);
+
+/** Review criteria created by the firm. Asteric evaluates them; it does not author them. */
+export const reviewRules = pgTable("review_rules", {
+  id: id(),
+  organizationId: orgId(),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  params: jsonb("params").notNull().default({}),
+  active: boolean("active").notNull().default(true),
+  sourceInsight: text("source_insight"),
+  createdBy: uuid("created_by"),
+  createdByLabel: text("created_by_label").notNull(),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("review_rules_org_idx").on(t.organizationId, t.active)]);
+
+/** Consequential firm decisions on a matter. Append-only. */
+export const decisions = pgTable("decisions", {
+  id: id(),
+  organizationId: orgId(),
+  matterId: uuid("matter_id").notNull().references(() => matters.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  reason: text("reason"),
+  predictionId: uuid("prediction_id"),
+  eventId: uuid("event_id"),
+  capitalAmount: money("capital_amount"),
+  decidedBy: uuid("decided_by"),
+  decidedLabel: text("decided_label").notNull(),
+  decidedAt: timestamp("decided_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: createdAt(),
+}, (t) => [index("decisions_org_matter_idx").on(t.organizationId, t.matterId, t.decidedAt)]);
+
+/** Lightweight record of matters the firm declined or referred out, so learning is not limited to accepted cases. */
+export const intakeDecisions = pgTable("intake_decisions", {
+  id: id(),
+  organizationId: orgId(),
+  receivedOn: date("received_on", { mode: "string" }).notNull(),
+  label: text("label"),
+  categoryId: uuid("category_id").references(() => categories.id, { onDelete: "set null" }),
+  referralSourceId: uuid("referral_source_id").references(() => referralSources.id, { onDelete: "set null" }),
+  attorneyId: uuid("attorney_id").references(() => attorneys.id, { onDelete: "set null" }),
+  jurisdiction: text("jurisdiction"),
+  disposition: text("disposition").notNull(),
+  reasonCode: text("reason_code").notNull(),
+  note: text("note"),
+  likelihood: text("likelihood"),
+  recoveryLow: money("recovery_low"),
+  recoveryHigh: money("recovery_high"),
+  decidedBy: uuid("decided_by"),
+  decidedLabel: text("decided_label").notNull(),
+  createdAt: createdAt(),
+}, (t) => [index("intake_org_idx").on(t.organizationId, t.receivedOn)]);
+
+/** Firm Learning patterns management chose to monitor. */
+export const monitoredPatterns = pgTable("monitored_patterns", {
+  id: id(),
+  organizationId: orgId(),
+  insightId: text("insight_id").notNull(),
+  label: text("label").notNull(),
+  createdBy: uuid("created_by"),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex("monitored_org_insight_uq").on(t.organizationId, t.insightId)]);
 
 /* ---------------------------------------------------------------- network (future) */
 /**

@@ -6,6 +6,9 @@ import { attorneys, categories, imports, matters, offers, outcomes, predictions,
 import { AuthError, type OrgContext } from "@/server/auth/session";
 import { audit } from "@/server/audit";
 import { DRIVERS, EVENT_TYPES, RESOLUTIONS, isFavorable } from "@/lib/taxonomy";
+import { decisionMoments, decisions } from "@/server/db/schema";
+import { fireMoment, resolveMoment } from "./moments";
+import { momentForEvent } from "@/lib/moments";
 
 const actor = (ctx: OrgContext) => ({ organizationId: ctx.org.id, actorUserId: ctx.user.id, actorLabel: ctx.user.name });
 const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
@@ -64,7 +67,7 @@ export type PredictionInput = z.infer<typeof predictionSchema>;
  * Records a prediction as a NEW row. An existing prediction is never updated:
  * a revision increments `version` and references the row it supersedes.
  */
-export async function recordPrediction(ctx: OrgContext, matterId: string, input: PredictionInput) {
+export async function recordPrediction(ctx: OrgContext, matterId: string, input: PredictionInput, opts: { inputs?: unknown; isReaffirmation?: boolean; momentId?: string | null } = {}) {
   const sandbox = ctx.role === "demo";
   if (!sandbox && !ctx.can("predictions.create")) throw new AuthError("forbidden", "Your role does not permit recording predictions.");
   if (sandbox && !ctx.org.isDemo) throw new AuthError("forbidden");
@@ -81,10 +84,17 @@ export async function recordPrediction(ctx: OrgContext, matterId: string, input:
       expectedDurationMonths: input.expectedDurationMonths, expectedExpense: input.expectedExpense, confidence: input.confidence,
       drivers: input.drivers, proceduralStage: m.proceduralStage, revisionReason: input.revisionReason?.trim() || null,
       source: sandbox ? "sandbox" : "prospective", supersedesId: prev?.id ?? null,
+      assessmentInputs: opts.inputs ?? null, isReaffirmation: Boolean(opts.isReaffirmation), momentId: opts.momentId ?? null,
     }).returning();
+    if (opts.momentId) await resolveMoment(tx, ctx, opts.momentId, opts.isReaffirmation ? "no_change" : "updated", row!.id);
+    if (!prev) {
+      // The initial assessment answers the "matter accepted" moment, if one is open.
+      const acc = await tx.select({ id: decisionMoments.id }).from(decisionMoments).where(and(eq(decisionMoments.matterId, matterId), eq(decisionMoments.type, "matter_accepted"), eq(decisionMoments.status, "open")));
+      for (const a of acc) await resolveMoment(tx, ctx, a.id, "updated", row!.id);
+    }
     await audit(tx, {
-      ...actor(ctx), action: prev ? "prediction.revised" : "prediction.created", objectType: "matter", objectId: matterId,
-      summary: `${prev ? "Revised" : "Recorded"} prediction v${row!.version} on ${m.name}: ${usd(input.recoveryLow)}–${usd(input.recoveryHigh)}, ${Math.round(input.probability * 100)}% favorable`,
+      ...actor(ctx), action: opts.isReaffirmation ? "assessment.reaffirmed" : prev ? "prediction.revised" : "prediction.created", objectType: "matter", objectId: matterId,
+      summary: opts.isReaffirmation ? `Confirmed no change to the assessment on ${m.name} (v${row!.version})` : `${prev ? "Revised" : "Recorded"} assessment v${row!.version} on ${m.name}: ${usd(input.recoveryLow)}–${usd(input.recoveryHigh)}, ${Math.round(input.probability * 100)}% favorable`,
       metadata: { version: row!.version, sandbox },
     });
     return row!;
@@ -110,7 +120,9 @@ export async function addEvent(ctx: OrgContext, matterId: string, input: z.infer
       await tx.update(matters).set({ expensesToDate: (m.expensesToDate ?? 0) + input.amount, updatedAt: new Date() }).where(eq(matters.id, matterId));
     }
     await audit(tx, { ...actor(ctx), action: "event.created", objectType: "matter", objectId: matterId, summary: `Added "${input.title}" to ${m.name}` });
-    return ev!;
+    const mt = m.status === "open" ? momentForEvent(input.type, input.amount, ctx.org.settings) : null;
+    const momentId = mt ? await fireMoment(tx, ctx, { matterId, matterName: m.name, type: mt, source: input.type === "expert_expense" ? "expense" : "event", eventId: ev!.id }) : null;
+    return { ...ev!, momentId };
   });
 }
 
@@ -128,7 +140,9 @@ export async function addOffer(ctx: OrgContext, matterId: string, input: z.infer
     if (!m) throw new LedgerError("Matter not found.");
     const [o] = await tx.insert(offers).values({ organizationId: ctx.org.id, matterId, ...input, notes: input.notes ?? null, createdBy: ctx.user.id }).returning();
     await audit(tx, { ...actor(ctx), action: "offer.recorded", objectType: "matter", objectId: matterId, summary: `Recorded ${input.direction === "defense_offer" ? "defense offer" : "demand"} of ${usd(input.amount)} on ${m.name}` });
-    return o!;
+    const momentId = m.status === "open" && input.direction === "defense_offer" && ctx.org.settings.momentOnOffers
+      ? await fireMoment(tx, ctx, { matterId, matterName: m.name, type: "offer_received", source: "offer", offerId: o!.id, note: `Defense offer of ${usd(input.amount)}` }) : null;
+    return { ...o!, momentId };
   });
 }
 
@@ -145,6 +159,11 @@ export async function updateFinancials(ctx: OrgContext, matterId: string, input:
       if (before !== after) await tx.insert(provenance).values({ organizationId: ctx.org.id, entityType: "matter", entityId: matterId, field, originalValue: before == null ? null : String(before), normalizedValue: after == null ? null : String(after), source: "manually_corrected", method: "manual", reviewedBy: ctx.user.id, reviewedAt: new Date() });
     }
     await audit(tx, { ...actor(ctx), action: "matter.edited", objectType: "matter", objectId: matterId, summary: `Updated financials on ${m.name}`, metadata: { fields: Object.keys(input) } });
+    const added = (input.expensesToDate ?? 0) - (m.expensesToDate ?? 0);
+    const t = ctx.org.settings.momentExpenseThreshold;
+    const momentId = m.status === "open" && t != null && added >= t
+      ? await fireMoment(tx, ctx, { matterId, matterName: m.name, type: "significant_expense", source: "expense", note: `Expenses increased by ${usd(added)} to ${usd(input.expensesToDate ?? 0)}` }) : null;
+    return { momentId };
   });
 }
 
@@ -184,6 +203,8 @@ export async function recordOutcome(ctx: OrgContext, matterId: string, input: z.
       outcomeId = (await tx.insert(outcomes).values({ organizationId: ctx.org.id, matterId, ...values }).returning())[0]!.id;
     }
     await tx.update(matters).set({ status: "closed", closedOn: input.resolvedOn, proceduralStage: "Resolved", updatedAt: new Date() }).where(eq(matters.id, matterId));
+    const openMoments = await tx.select({ id: decisionMoments.id }).from(decisionMoments).where(and(eq(decisionMoments.matterId, matterId), eq(decisionMoments.status, "open")));
+    for (const mo of openMoments) await resolveMoment(tx, ctx, mo.id, "closed");
     await audit(tx, { ...actor(ctx), action: existing ? "outcome.corrected" : "outcome.recorded", objectType: "matter", objectId: matterId, summary: `${existing ? "Corrected" : "Recorded"} outcome on ${m.name}: ${input.resolutionType.replace(/_/g, " ")}${input.grossRecovery != null ? `, ${usd(input.grossRecovery)} gross` : ""}` });
     return { outcomeId, favorable };
   });
@@ -231,6 +252,8 @@ export async function createMatter(ctx: OrgContext, input: z.infer<typeof newMat
     await tx.insert(proceduralEvents).values({ organizationId: ctx.org.id, matterId: m!.id, type: "matter_opened", occurredOn: input.openedOn, title: "Matter opened", createdBy: ctx.user.id });
     await tx.insert(provenance).values({ organizationId: ctx.org.id, entityType: "matter", entityId: m!.id, field: "matter", normalizedValue: input.name, source: "attorney_entered", method: "manual", reviewedBy: ctx.user.id, reviewedAt: new Date() });
     await audit(tx, { ...actor(ctx), action: "matter.created", objectType: "matter", objectId: m!.id, summary: `Added matter ${input.name}` });
+    await tx.insert(decisions).values({ organizationId: ctx.org.id, matterId: m!.id, type: "accept", reason: "Matter opened", decidedBy: ctx.user.id, decidedLabel: ctx.user.name, decidedAt: new Date(`${input.openedOn}T12:00:00Z`) });
+    await fireMoment(tx, ctx, { matterId: m!.id, matterName: input.name, type: "matter_accepted", source: "intake" });
     return m!;
   });
 }

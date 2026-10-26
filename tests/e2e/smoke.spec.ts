@@ -23,14 +23,14 @@ test("demo visitor can explore the synthetic workspace", async ({ page }) => {
   await page.getByRole("button", { name: /demo/i }).first().click();
   await page.waitForURL(/\/app$/);
   await expect(page.getByText("Illustrative demo organization")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Portfolio overview" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Decision Inbox" })).toBeVisible();
 
   await page.goto("/app/matters?q=KR-1182");
   await page.getByRole("link", { name: "Okonkwo v. Meridian Logistics" }).click();
-  await expect(page.getByText("Revision v2")).toBeVisible();
+  await expect(page.getByText("Assessment v2")).toBeVisible();
   await expect(page.getByText("$475,000").first()).toBeVisible();
 
-  for (const path of ["/app/calibration", "/app/economics", "/app/insights", "/app/watch", "/app/data-quality", "/app/network", "/app/predictions", "/app/imports"]) {
+  for (const path of ["/app/calibration", "/app/economics", "/app/insights", "/app/watch", "/app/data-quality", "/app/network", "/app/predictions", "/app/imports", "/app/portfolio", "/app/rules", "/app/intake"]) {
     const res = await page.goto(path);
     expect(res?.status(), path).toBe(200);
     await expect(page.locator("h1")).toBeVisible();

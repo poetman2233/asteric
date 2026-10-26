@@ -29,7 +29,7 @@ export default async function WatchPage({ searchParams }: { searchParams: Promis
 
   return (
     <>
-      <PageHead title="Portfolio Watch" sub="Open matters whose current facts have moved away from the assumptions in their latest prediction. Flags prompt a review; they are not recommendations." actions={<MethodologyButton id="watch" />} />
+      <PageHead title="Portfolio Watch" sub="Each open matter beside the assumptions in its latest assessment: original assumption, current reality and the variance. The attorney decides what a variance means." actions={<MethodologyButton id="watch" />} />
       <FilterBar options={{ categories: p.categories, attorneys: p.attorneys, referrals: p.referrals, jurisdictions: p.jurisdictions }} show={{ category: true, attorney: true, referral: true, jurisdiction: true }}
         extra={<>
           <SelectParam param="kind" label="Flag type" options={[{ value: "", label: "All flag types" }, ...(Object.keys(WATCH_LABEL) as WatchKind[]).filter((k) => counts[k]).map((k) => ({ value: k, label: `${WATCH_LABEL[k]} (${counts[k]})` }))]} />
@@ -43,15 +43,16 @@ export default async function WatchPage({ searchParams }: { searchParams: Promis
         <div className="table-wrap">
           <table className="table">
             <caption className="sr-only">Portfolio Watch flags, most severe first</caption>
-            <thead><tr><th>Severity</th><th>Matter</th><th>Flag</th><th>Detail</th><th className="r">Measure</th></tr></thead>
+            <thead><tr><th>Matter</th><th>Original assumption</th><th>Current reality</th><th className="r">Variance</th><th className="r">Last assessment</th><th /></tr></thead>
             <tbody>
               {flags.map((w) => (
-                <tr key={`${w.matterId}-${w.kind}`} className="clickable">
-                  <td><span className="row" style={{ gap: 6 }}><span className="watch-sev" data-sev={w.severity} aria-hidden="true" style={{ height: 14 }} />{SEV_LABEL[w.severity]}</span></td>
-                  <td><Link className="cell-primary" style={{ display: "block" }} href={`/app/matters/${w.matterId}`}>{w.matterName}</Link><span className="cell-sub">{w.attorneyName ?? "No lead attorney"}</span></td>
-                  <td>{w.title}</td>
-                  <td className="ink2" style={{ whiteSpace: "normal", minWidth: 280 }}>{w.detail}</td>
-                  <td className="r"><strong style={{ fontWeight: 550 }}>{w.metric ?? ""}</strong></td>
+                <tr key={`${w.matterId}-${w.kind}`}>
+                  <td><span className="row" style={{ gap: 8, alignItems: "flex-start" }}><span className="watch-sev" role="img" data-sev={w.severity} aria-label={`${SEV_LABEL[w.severity]} severity`} style={{ height: 30 }} /><span><Link className="cell-primary" style={{ display: "block" }} href={`/app/matters/${w.matterId}`}>{w.matterName}</Link><span className="cell-sub">{w.title} · {w.attorneyName ?? "No lead attorney"}</span></span></span></td>
+                  <td className="ink2">{w.assumption ?? "—"}</td>
+                  <td>{w.reality ?? "—"}</td>
+                  <td className="r"><strong style={{ fontWeight: 550 }}>{w.variance ?? w.metric ?? ""}</strong></td>
+                  <td className="r ink2">{w.lastAssessmentDays != null ? `${w.lastAssessmentDays} days ago` : "—"}</td>
+                  <td className="r"><Link className="btn btn-secondary btn-sm" href={`/app/matters/${w.matterId}?review=watch:${w.kind}:${w.matterId}`}>{w.kind === "no_prediction" ? "Record assessment" : w.kind.startsWith("duration") ? "Review matter" : "Review assessment"}</Link></td>
                 </tr>
               ))}
             </tbody>

@@ -112,7 +112,7 @@ export function revisionSummary(matters: MatterFact[]) {
   let revised = 0, revisions = 0, upProb = 0, downProb = 0;
   const probDeltas: number[] = [];
   for (const m of matters) {
-    const ps = m.predictions.filter((p) => p.source !== "sandbox");
+    const ps = m.predictions.filter((p) => p.source !== "sandbox" && !p.isReaffirmation);
     if (ps.length > 1) revised++;
     for (let i = 1; i < ps.length; i++) {
       revisions++;

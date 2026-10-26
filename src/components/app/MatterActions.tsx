@@ -1,6 +1,10 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { AssessmentFlow, type FlowMoment, type PriorAssessment } from "@/components/app/AssessmentFlow";
+import { markDevelopmentAction, recordDecisionAction } from "@/app/app/workflow-actions";
+import type { Baseline } from "@/lib/assessment";
 import { Dialog } from "@/components/ui/Dialog";
 import { FormMessage, SubmitButton } from "@/components/ui/Form";
 import { Icon } from "@/components/ui/Icon";
@@ -11,15 +15,18 @@ import { DRIVERS, EVENT_TYPES, RESOLUTIONS } from "@/lib/taxonomy";
 
 type Bound = (s: ActionResult, fd: FormData) => Promise<ActionResult>;
 
-function ActionDialog({ open, onClose, title, sub, action, submit, children, wide }: {
+function ActionDialog({ open, onClose, title, sub, action, submit, children, wide, onMoment }: {
   open: boolean; onClose: () => void; title: string; sub?: React.ReactNode; action: Bound; submit: string; children: React.ReactNode; wide?: boolean;
+  /** Called when the save opened a Decision Moment, so the attorney can confirm or update the assessment right away. */
+  onMoment?: (momentId: string) => void;
 }) {
   const [state, formAction] = useActionState(action, {});
   useEffect(() => {
     if (!state.ok) return;
-    const t = setTimeout(onClose, 1100);
+    const momentId = state.data?.momentId as string | undefined;
+    const t = setTimeout(() => (momentId && onMoment ? onMoment(momentId) : onClose()), momentId && onMoment ? 500 : 1100);
     return () => clearTimeout(t);
-  }, [state, onClose]);
+  }, [state, onClose, onMoment]);
   return (
     <Dialog open={open} onClose={onClose} title={title} sub={sub} wide={wide}>
       <form action={formAction} className="stack">
@@ -42,22 +49,36 @@ export type PrevPrediction = {
   expectedDurationMonths: number | null; expectedExpense: number | null; confidence: string | null; drivers: string[];
 } | null;
 
-export type MatterPermissions = { predict: boolean; sandbox: boolean; events: boolean; outcome: boolean; edit: boolean };
+export type MatterPermissions = { predict: boolean; sandbox: boolean; events: boolean; outcome: boolean; edit: boolean; decide: boolean };
 
-export function MatterActions({ matterId, open: isOpen, prev, perms, financials }: {
-  matterId: string; open: boolean; prev: PrevPrediction; perms: MatterPermissions; financials: { expensesToDate: number | null; attorneyHours: number | null };
+export type FlowProps = {
+  matterName: string; baseline: Baseline; prior: PriorAssessment; context: { expensesToDate: number | null; elapsedMonths: number | null };
+  moments: { id: string; type: string; label: string; prompt: string; note: string | null }[];
+  events: { id: string; label: string }[];
+  auto: { reviewKey: string | null; momentId: string | null; second: boolean };
+};
+
+export function MatterActions({ matterId, open: isOpen, prev, perms, financials, flow }: {
+  matterId: string; open: boolean; prev: PrevPrediction; perms: MatterPermissions; financials: { expensesToDate: number | null; attorneyHours: number | null }; flow: FlowProps;
 }) {
-  const [dlg, setDlg] = useState<null | "predict" | "event" | "offer" | "outcome" | "financials">(null);
-  const close = () => setDlg(null);
+  const router = useRouter();
   const canPredict = isOpen && (perms.predict || perms.sandbox);
+  const autoMoment = flow.auto.momentId ? flow.moments.find((m) => m.id === flow.auto.momentId) ?? null : null;
+  const [dlg, setDlg] = useState<null | "predict" | "assess" | "event" | "offer" | "outcome" | "financials" | "decision" | "development">(
+    flow.auto.second && perms.decide ? "decision" : (flow.auto.reviewKey || flow.auto.momentId) && canPredict ? "assess" : null);
+  const [moment, setMoment] = useState<FlowMoment>(autoMoment);
+  const close = () => { setDlg(null); setMoment(null); if (flow.auto.reviewKey || flow.auto.momentId) router.replace(`/app/matters/${matterId}`, { scroll: false }); };
+  const openMoment = (id: string) => { router.refresh(); setMoment({ id, label: "Development recorded", prompt: "Has this changed your assessment?", note: null }); setDlg(canPredict ? "assess" : null); };
   return (
     <>
       <div className="row-wrap" style={{ gap: 8 }}>
         {canPredict ? (
-          <button type="button" className="btn btn-primary" onClick={() => setDlg("predict")}>
-            <Icon name="plus" size={14} /> {prev ? "Revise prediction" : "Record prediction"}
+          <button type="button" className="btn btn-primary" onClick={() => { setMoment(flow.moments[0] ?? null); setDlg("assess"); }}>
+            {prev ? "Review assessment" : "Assess matter"}
           </button>
         ) : null}
+        {perms.decide && isOpen ? <button type="button" className="btn btn-secondary" onClick={() => setDlg("decision")}>Record decision</button> : null}
+        {perms.events && isOpen ? <button type="button" className="btn btn-secondary" onClick={() => setDlg("development")}>Mark development</button> : null}
         {perms.events ? <button type="button" className="btn btn-secondary" onClick={() => setDlg("event")}>Add event</button> : null}
         {perms.events ? <button type="button" className="btn btn-secondary" onClick={() => setDlg("offer")}>Add offer</button> : null}
         {perms.edit && isOpen ? <button type="button" className="btn btn-secondary" onClick={() => setDlg("financials")}>Update financials</button> : null}
@@ -65,9 +86,12 @@ export function MatterActions({ matterId, open: isOpen, prev, perms, financials 
       </div>
 
       {dlg === "predict" ? <PredictionDialog matterId={matterId} prev={prev} sandbox={perms.sandbox && !perms.predict} onClose={close} /> : null}
+      {dlg === "assess" ? <AssessmentFlow open onClose={close} matterId={matterId} matterName={flow.matterName} baseline={flow.baseline} prior={flow.prior} moment={moment} itemKey={flow.auto.reviewKey} sandbox={perms.sandbox && !perms.predict} context={flow.context} /> : null}
+      {dlg === "decision" ? <DecisionDialog matterId={matterId} events={flow.events} second={flow.auto.second} itemKey={flow.auto.reviewKey} onClose={close} /> : null}
+      {dlg === "development" ? <DevelopmentDialog matterId={matterId} onClose={close} onMoment={openMoment} /> : null}
 
       {dlg === "event" ? (
-        <ActionDialog open onClose={close} title="Add procedural event" action={addEventAction.bind(null, matterId)} submit="Add event">
+        <ActionDialog open onClose={close} onMoment={openMoment} title="Add procedural event" action={addEventAction.bind(null, matterId)} submit="Add event">
           <div className="grid-2">
             <div className="field"><label className="label" htmlFor="ev-type">Event type</label>
               <select id="ev-type" name="type" className="select" required defaultValue="deposition">
@@ -83,7 +107,7 @@ export function MatterActions({ matterId, open: isOpen, prev, perms, financials 
       ) : null}
 
       {dlg === "offer" ? (
-        <ActionDialog open onClose={close} title="Record offer or demand" action={addOfferAction.bind(null, matterId)} submit="Record">
+        <ActionDialog open onClose={close} onMoment={openMoment} title="Record offer or demand" action={addOfferAction.bind(null, matterId)} submit="Record">
           <div className="grid-2">
             <div className="field"><label className="label" htmlFor="of-dir">Type</label>
               <select id="of-dir" name="direction" className="select" defaultValue="defense_offer"><option value="defense_offer">Defense offer</option><option value="plaintiff_demand">Plaintiff demand</option></select>
@@ -96,7 +120,7 @@ export function MatterActions({ matterId, open: isOpen, prev, perms, financials 
       ) : null}
 
       {dlg === "financials" ? (
-        <ActionDialog open onClose={close} title="Update financials" sub="Changes are recorded in the provenance log with the previous value." action={updateFinancialsAction.bind(null, matterId)} submit="Save">
+        <ActionDialog open onClose={close} onMoment={openMoment} title="Update financials" sub="Changes are recorded in the provenance log with the previous value." action={updateFinancialsAction.bind(null, matterId)} submit="Save">
           <div className="grid-2">
             <div className="field"><label className="label" htmlFor="fi-exp">Litigation expenses to date (USD)</label><input id="fi-exp" name="expensesToDate" className="input" inputMode="decimal" defaultValue={money(financials.expensesToDate)} /></div>
             <div className="field"><label className="label" htmlFor="fi-hrs">Attorney hours to date</label><input id="fi-hrs" name="attorneyHours" className="input" inputMode="decimal" defaultValue={financials.attorneyHours ?? ""} /></div>
@@ -219,5 +243,58 @@ export function ProvenanceButton({ rows, importName }: { rows: ProvRow[]; import
         ) : <p className="muted">All values on this matter were entered directly in Asteric.</p>}
       </Dialog>
     </>
+  );
+}
+
+const DECISIONS = [
+  ["continue_investment", "Continue investment"], ["approve_expense", "Approve major expense"], ["offer_response", "Offer response"],
+  ["second_review", "Second review completed"], ["accept", "Accept matter"], ["reject", "Reject matter"], ["refer", "Refer out"], ["other", "Other internal decision"],
+] as const;
+
+function DecisionDialog({ matterId, events, second, itemKey, onClose }: { matterId: string; events: { id: string; label: string }[]; second: boolean; itemKey: string | null; onClose: () => void }) {
+  const router = useRouter();
+  const [type, setType] = useState<string>(second ? "second_review" : "continue_investment");
+  const [reason, setReason] = useState("");
+  const [amount, setAmount] = useState("");
+  const [eventId, setEventId] = useState("");
+  const [msg, setMsg] = useState<{ ok?: string; error?: string }>({});
+  const [pending, start] = useTransition();
+  return (
+    <Dialog open onClose={onClose} title={second ? "Record second review" : "Record firm decision"} sub="Recorded in the decision ledger with the latest assessment. Asteric records the decision; it does not recommend one.">
+      <div className="stack">
+        <div className="field"><label className="label" htmlFor="dc-type">Decision</label>
+          <select id="dc-type" className="select" value={type} onChange={(e) => setType(e.target.value)}>{DECISIONS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div>
+        {type === "approve_expense" || type === "continue_investment" ? <div className="field"><label className="label" htmlFor="dc-amt">Capital committed (optional)</label><input id="dc-amt" className="input" inputMode="decimal" placeholder="25,000" value={amount} onChange={(e) => setAmount(e.target.value)} /></div> : null}
+        {events.length ? <div className="field"><label className="label" htmlFor="dc-ev">Linked event (optional)</label><select id="dc-ev" className="select" value={eventId} onChange={(e) => setEventId(e.target.value)}><option value="">None</option>{events.map((e) => <option key={e.id} value={e.id}>{e.label}</option>)}</select></div> : null}
+        <div className="field"><label className="label" htmlFor="dc-reason">{second ? "Review notes" : "Reason (optional)"}</label><textarea id="dc-reason" className="textarea" rows={2} maxLength={1000} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={second ? "Reviewed the assessment and supporting facts with the lead attorney." : ""} /></div>
+        {msg.error ? <div className="alert alert-error" role="alert">{msg.error}</div> : msg.ok ? <div className="alert alert-success">{msg.ok}</div> : null}
+        <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
+          <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn btn-primary" disabled={pending || Boolean(msg.ok)} onClick={() => start(async () => {
+            const n = Number(amount.replace(/[$,\s]/g, ""));
+            const r = await recordDecisionAction(matterId, { type, reason: reason || undefined, capitalAmount: amount && Number.isFinite(n) ? n : null, eventId: eventId || null, itemKey: type === "second_review" ? itemKey : null });
+            setMsg(r); if (!r.error) { router.refresh(); setTimeout(onClose, 900); }
+          })}>{pending ? "Saving…" : "Record decision"}</button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+function DevelopmentDialog({ matterId, onClose, onMoment }: { matterId: string; onClose: () => void; onMoment: (id: string) => void }) {
+  const [note, setNote] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  return (
+    <Dialog open onClose={onClose} title="Mark a material development" sub="Opens a Decision Moment on this matter so the assessment can be reconfirmed.">
+      <div className="stack">
+        <div className="field"><label className="label" htmlFor="md-note">What happened?</label><input id="md-note" className="input" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Key witness unavailable for trial" autoFocus /></div>
+        {err ? <div className="alert alert-error">{err}</div> : null}
+        <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
+          <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn btn-primary" disabled={pending || !note.trim()} onClick={() => start(async () => { const r = await markDevelopmentAction(matterId, note); if (r.error) setErr(r.error); else onMoment(r.data!.momentId as string); })}>Continue</button>
+        </div>
+      </div>
+    </Dialog>
   );
 }

@@ -3,6 +3,7 @@
  * a Postgres advisory lock prevents two deploys migrating at once.
  *   npm run db:migrate
  */
+import "./load-env";
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";

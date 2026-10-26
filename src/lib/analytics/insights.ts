@@ -48,8 +48,8 @@ export function generateInsights(all: MatterFact[], a: EconomicsAssumptions, opt
     if (worst.medianRatio != null && worst.medianRatio < 0.8 && worst.key !== best.key) {
       out.push({
         id: `valuation-${worst.key}`, kind: "Valuation",
-        headline: `Matters predicted at ${worst.label.replace("and above", "or more")} have been systematically overestimated.`,
-        detail: `The median recovery was ${pct(worst.medianRatio)} of the predicted midpoint, and ${pct(worst.within ?? 0)} of recoveries landed inside the predicted range, compared with ${pct(best.within ?? 0)} for matters predicted at ${best.label}.`,
+        headline: `Matters assessed at ${worst.label.replace("and above", "or more")} have been systematically overestimated.`,
+        detail: `The median recovery was ${pct(worst.medianRatio)} of the assessed midpoint, and ${pct(worst.within ?? 0)} of recoveries landed inside the assessed range, compared with ${pct(best.within ?? 0)} for matters assessed at ${best.label}.`,
         n: worst.n, period: period(subset(worst.matterIds)), href: `/app/matters?status=closed&band=${worst.key}`, methodology: "range", weight: (1 - worst.medianRatio) * Math.sqrt(worst.n), causalNote: false,
       });
     }
@@ -65,8 +65,8 @@ export function generateInsights(all: MatterFact[], a: EconomicsAssumptions, opt
       const over = top.observed! < top.meanPredicted!;
       out.push({
         id: `calibration-${top.lo}`, kind: "Calibration",
-        headline: `Predictions between ${pct(top.lo)} and ${pct(top.hi)} favorable resolved favorably ${pct(top.observed!)} of the time.`,
-        detail: `Initial predictions in this band averaged ${pct(top.meanPredicted!)}, so the firm was ${over ? "overconfident" : "underconfident"} by ${Math.round(Math.abs(top.observed! - top.meanPredicted!) * 100)} percentage points. Firm-wide Brier score: ${cal.brier!.toFixed(3)} across ${cal.n} resolved predictions.`,
+        headline: `Assessments between ${pct(top.lo)} and ${pct(top.hi)} favorable resolved favorably ${pct(top.observed!)} of the time.`,
+        detail: `Initial assessments in this band averaged ${pct(top.meanPredicted!)}, so the firm was ${over ? "overconfident" : "underconfident"} by ${Math.round(Math.abs(top.observed! - top.meanPredicted!) * 100)} percentage points. Firm-wide Brier score: ${cal.brier!.toFixed(3)} across ${cal.n} resolved assessments.`,
         n: top.n, period: period(subset(top.matterIds)), href: `/app/matters?status=closed&pbin=${top.lo.toFixed(1)}-${top.hi.toFixed(1)}`, methodology: "calibration", weight: Math.abs(top.observed! - top.meanPredicted!) * Math.sqrt(top.n) * 2, causalNote: false,
       });
     }
@@ -96,8 +96,8 @@ export function generateInsights(all: MatterFact[], a: EconomicsAssumptions, opt
   if (expTop) {
     out.push({
       id: `expense-${expTop.k}`, kind: "Expense",
-      headline: `${expTop.g.label} matters exceeded predicted litigation expense by a median ${pct(expTop.s.medianPctError!)}.`,
-      detail: `${pct(expTop.s.shareOver ?? 0)} of resolved ${expTop.g.label.toLowerCase()} matters with a recorded prediction finished above their expected expense.`,
+      headline: `${expTop.g.label} matters exceeded assessed litigation expense by a median ${pct(expTop.s.medianPctError!)}.`,
+      detail: `${pct(expTop.s.shareOver ?? 0)} of resolved ${expTop.g.label.toLowerCase()} matters with a recorded assessment finished above their expected expense.`,
       n: expTop.s.n, period: period(expTop.g.ms), href: `/app/matters?status=closed&category=${expTop.k}`, methodology: "expense", weight: expTop.s.medianPctError! * Math.sqrt(expTop.s.n), causalNote: false,
     });
   }
@@ -142,7 +142,7 @@ export function generateInsights(all: MatterFact[], a: EconomicsAssumptions, opt
         const cand: Insight = {
           id: `attorney-${id}`, kind: "Attorney",
           headline: `${g.name} is well calibrated on outcome probability but underestimates duration by a median ${d.medianError!.toFixed(1)} months.`,
-          detail: `Brier score ${b.toFixed(3)} against ${firmBrier.toFixed(3)} firm-wide across ${ps.length} resolved predictions${expPart}.`,
+          detail: `Brier score ${b.toFixed(3)} against ${firmBrier.toFixed(3)} firm-wide across ${ps.length} resolved assessments${expPart}.`,
           n: ps.length, period: period(g.ms), href: `/app/matters?status=closed&attorney=${id}`, methodology: "brier", weight: d.medianError! * Math.sqrt(ps.length) / 3, causalNote: true,
         };
         if (!best || cand.weight > best.weight) best = cand;
@@ -157,8 +157,8 @@ export function generateInsights(all: MatterFact[], a: EconomicsAssumptions, opt
   if (open.length >= 10 && uncovered.length / open.length > 0.15) {
     out.push({
       id: "coverage", kind: "Coverage",
-      headline: `${uncovered.length} of ${open.length} open matters have no recorded prediction.`,
-      detail: `Prospective prediction coverage is ${pct(1 - uncovered.length / open.length)}. Calibration for future outcomes depends on predictions recorded before results are known.`,
+      headline: `${uncovered.length} of ${open.length} open matters have no recorded assessment.`,
+      detail: `Prospective assessment coverage is ${pct(1 - uncovered.length / open.length)}. Calibration for future outcomes depends on assessments recorded before results are known.`,
       n: open.length, period: null, href: "/app/watch?kind=no_prediction", methodology: "coverage", weight: (uncovered.length / open.length) * 3, causalNote: false,
     });
   }

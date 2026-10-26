@@ -2,6 +2,8 @@
 
 Decision intelligence for contingency litigation. Firms record what they expect on each matter (a recovery range, the probability of a favorable result, duration and expense) before they know the outcome. Asteric then measures those predictions against what actually happened and shows where the firm's judgment and capital perform well or poorly.
 
+V2 turns that into a working loop: a 30-second **Quick Case Assessment** (comparative questions, attorney-confirmed, never an AI estimate); **Decision Moments** opened by configured developments (offers, mediation, discovery, rulings, large expenses); a **Decision Inbox** home screen for drift, stale assessments and firm review rules; **Firm Review Rules** that management creates, often straight from a **Firm Learning** finding; and a record of firm **decisions** and **declined or referred intake**. Every action is audited, and assessments and decisions are append-only.
+
 This repository holds both the public marketing site and the authenticated multi-tenant application.
 
 | Path | What it is |

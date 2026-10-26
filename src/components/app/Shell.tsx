@@ -43,20 +43,23 @@ export function Shell(p: ShellProps) {
   useEffect(() => setNavOpen(false), [pathname]);
 
   const primary: NavItem[] = [
-    { href: "/app", label: "Overview", icon: "overview" },
+    { href: "/app", label: "Decision Inbox", icon: "inbox", count: p.watchCount || undefined },
     { href: "/app/matters", label: "Matters", icon: "matters" },
-    { href: "/app/watch", label: "Portfolio Watch", icon: "watch", count: p.watchCount || undefined },
-    { href: "/app/predictions", label: "Predictions", icon: "predictions" },
-    { href: "/app/imports", label: "Imports", icon: "imports" },
+    { href: "/app/insights", label: "Firm Learning", icon: "insights" },
   ];
   const intelligence: NavItem[] = [
-    { href: "/app/calibration", label: "Calibration", icon: "calibration" },
+    { href: "/app/portfolio", label: "Portfolio", icon: "overview" },
+    { href: "/app/watch", label: "Portfolio Watch", icon: "watch" },
     { href: "/app/economics", label: "Economics", icon: "economics" },
-    { href: "/app/insights", label: "Insights", icon: "insights" },
-    { href: "/app/data-quality", label: "Data quality", icon: "quality" },
+    { href: "/app/calibration", label: "Calibration", icon: "calibration" },
     { href: "/app/network", label: "Network", icon: "network", badge: "Preview" },
   ];
   const admin: NavItem[] = [
+    { href: "/app/rules", label: "Review Rules", icon: "rules" },
+    { href: "/app/predictions", label: "Assessments", icon: "predictions" },
+    { href: "/app/intake", label: "Intake decisions", icon: "intake" },
+    { href: "/app/imports", label: "Imports", icon: "imports" },
+    { href: "/app/data-quality", label: "Data quality", icon: "quality" },
     ...(p.canAudit ? [{ href: "/app/audit-log", label: "Audit log", icon: "audit" as IconName }] : []),
     { href: "/app/settings/profile", label: "Settings", icon: "settings" },
   ];
@@ -81,7 +84,7 @@ export function Shell(p: ShellProps) {
         </button>
         <nav className="sb-nav" aria-label="Primary">{renderNav(primary)}</nav>
         <div className="sb-sep" />
-        <p className="eyebrow" style={{ padding: "0 10px 6px" }}>Intelligence</p>
+        <p className="eyebrow" style={{ padding: "0 10px 6px" }}>Portfolio</p>
         <nav className="sb-nav" aria-label="Intelligence">{renderNav(intelligence)}</nav>
         <div className="sb-sep" />
         <nav className="sb-nav" aria-label="Administration">{renderNav(admin)}</nav>
@@ -164,11 +167,15 @@ export function Shell(p: ShellProps) {
 type PaletteItem = { key: string; label: string; sub?: string; href: string; group: string };
 const ACTIONS: PaletteItem[] = [
   { key: "a-matters", label: "Search matters", href: "/app/matters", group: "Go to" },
-  { key: "a-predict", label: "Record prediction", sub: "Choose an open matter", href: "/app/matters?status=open&hint=record", group: "Actions" },
+  { key: "a-inbox", label: "Open Decision Inbox", href: "/app", group: "Go to" },
+  { key: "a-predict", label: "Record assessment", sub: "Choose an open matter", href: "/app/matters?status=open&hint=record", group: "Actions" },
+  { key: "a-rules", label: "Review rules", href: "/app/rules", group: "Go to" },
+  { key: "a-intake", label: "Record declined or referred intake", href: "/app/intake", group: "Actions" },
   { key: "a-import", label: "Import data", href: "/app/imports/new", group: "Actions" },
   { key: "a-cal", label: "Open Calibration", href: "/app/calibration", group: "Go to" },
   { key: "a-econ", label: "Open Economics", href: "/app/economics", group: "Go to" },
-  { key: "a-ins", label: "Open Insights", href: "/app/insights", group: "Go to" },
+  { key: "a-ins", label: "Open Firm Learning", href: "/app/insights", group: "Go to" },
+  { key: "a-port", label: "Open Portfolio", href: "/app/portfolio", group: "Go to" },
   { key: "a-watch", label: "Open Portfolio Watch", href: "/app/watch", group: "Go to" },
   { key: "a-dq", label: "Open Data quality", href: "/app/data-quality", group: "Go to" },
 ];

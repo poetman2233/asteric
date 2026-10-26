@@ -118,7 +118,9 @@ export function RevokeOthersButton() {
 export type OrgFormValues = {
   name: string; timezone: string; attorneyHourlyCost: number | null; defaultContingencyRate: number | null; expensesReimbursedFromRecovery: boolean;
   staleDays: number; expenseVarianceThreshold: number; analystsSeePredictionAuthors: boolean; aiAssistEnabled: boolean;
+  momentEventTypes: string[]; momentOnOffers: boolean; momentExpenseThreshold: number | null;
 };
+const MOMENT_EVENTS: [string, string][] = [["mediation_scheduled", "Mediation scheduled"], ["mediation_held", "Mediation completed"], ["discovery_closed", "Discovery closed"], ["deposition", "Deposition"], ["motion_filed", "Dispositive motion filed"], ["motion_decided", "Motion decided"], ["trial_set", "Trial date set"], ["settlement_conference", "Settlement conference"]];
 
 export function OrganizationForm({ v, editable, aiConfigured }: { v: OrgFormValues; editable: boolean; aiConfigured: boolean }) {
   const [state, action] = useActionState(updateOrganizationAction, {} as ActionResult);
@@ -144,6 +146,11 @@ export function OrganizationForm({ v, editable, aiConfigured }: { v: OrgFormValu
           <div className="field"><label className="label" htmlFor="org-sd">Flag predictions older than (days)</label><input id="org-sd" name="staleDays" className="input" inputMode="numeric" defaultValue={v.staleDays} /></div>
           <div className="field"><label className="label" htmlFor="org-ev">Flag expense overruns above (%)</label><input id="org-ev" name="expenseVarianceThreshold" className="input" inputMode="decimal" defaultValue={Math.round(v.expenseVarianceThreshold * 100)} /></div>
         </div>
+        <h3 className="section-title" style={{ marginTop: 8 }}>Decision moments</h3>
+        <p className="help" style={{ marginTop: -6 }}>When one of these is recorded, the attorney is asked whether it changed the assessment, and the matter appears in the Decision Inbox until answered.</p>
+        <div className="row-wrap" style={{ gap: 12 }}>{MOMENT_EVENTS.map(([k, l]) => <label key={k} className="check"><input type="checkbox" name="momentEventTypes" value={k} defaultChecked={v.momentEventTypes.includes(k)} /> {l}</label>)}</div>
+        <label className="check"><input type="checkbox" name="momentOnOffers" defaultChecked={v.momentOnOffers} /> Defense settlement offers</label>
+        <div className="field" style={{ maxWidth: 320 }}><label className="label" htmlFor="org-mx">Significant new expense at or above (USD)</label><input id="org-mx" name="momentExpenseThreshold" className="input" inputMode="decimal" defaultValue={v.momentExpenseThreshold ?? ""} placeholder="Off" /></div>
         <h3 className="section-title" style={{ marginTop: 8 }}>Privacy</h3>
         <label className="check"><input type="checkbox" name="analystsSeePredictionAuthors" defaultChecked={v.analystsSeePredictionAuthors} /> Analysts can see which attorney recorded each prediction</label>
         <label className="check" style={{ alignItems: "flex-start" }}>

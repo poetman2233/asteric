@@ -20,11 +20,21 @@ export default async function NetworkPage() {
 
   return (
     <>
-      <PageHead title={<>Network <span className="badge" style={{ verticalAlign: "middle", marginLeft: 6 }}>Preview</span></>} sub="A planned, opt-in way for firms to compare their own patterns against anonymized aggregates. It is not active." />
+      <PageHead title={<>Network <span className="badge" style={{ verticalAlign: "middle", marginLeft: 6 }}>Preview</span></>} sub="Decision Benchmarks: a planned, opt-in way for firms to compare how they assess and resolve matters against de-identified aggregates. It is not active." />
       <div className="stack-lg">
         <div className="alert alert-info">
           <span><strong>No network data exists yet.</strong> Asteric does not currently share, pool or benchmark any firm&apos;s data, and nothing on this page comes from another firm. Your organization&apos;s status: <strong>{s.networkParticipation === "not_enrolled" ? "Not enrolled" : s.networkParticipation}</strong>.</span>
         </div>
+
+        <Card title="Potential Decision Benchmarks">
+          <ul style={{ margin: 0, paddingLeft: 20 }} className="stack-sm">
+            <li>How firms assess similar matters at intake, by category and jurisdiction.</li>
+            <li>How assessments typically change by procedural stage.</li>
+            <li>Calibration differences: how often assessed probabilities are borne out.</li>
+            <li>Duration and expense expectations against what matters actually required.</li>
+            <li>Capital-allocation patterns: expense committed relative to outcomes.</li>
+          </ul>
+        </Card>
 
         <Card title="How it would work">
           <ol style={{ margin: 0, paddingLeft: 20 }} className="stack-sm">

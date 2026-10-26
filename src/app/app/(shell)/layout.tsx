@@ -3,17 +3,15 @@ import { Shell } from "@/components/app/Shell";
 import { listMemberships, pageOrgContext } from "@/server/auth/session";
 import { withTenant } from "@/server/db";
 import { auditEvents, notificationReads } from "@/server/db/schema";
-import { loadPortfolio, todayIso } from "@/server/services/portfolio";
-import { portfolioWatch } from "@/lib/analytics/watch";
+import { getInbox } from "@/server/services/workflow";
 import { ago } from "@/lib/format";
 
-const ACTIVITY_ACTIONS = ["import.completed", "import.started", "prediction.created", "prediction.revised", "outcome.recorded", "team.joined", "team.invited", "event.created", "offer.recorded"];
+const ACTIVITY_ACTIONS = ["import.completed", "import.started", "prediction.created", "prediction.revised", "assessment.reaffirmed", "outcome.recorded", "team.joined", "team.invited", "event.created", "offer.recorded", "rule.created", "decision.recorded", "moment.created", "inbox.assigned"];
 
 export default async function AppShellLayout({ children }: { children: React.ReactNode }) {
   const ctx = await pageOrgContext();
-  const [memberships, portfolio] = [await listMemberships(ctx.user.id), await loadPortfolio(ctx.org.id)];
-  const s = ctx.org.settings;
-  const watchCount = new Set(portfolioWatch(portfolio.facts, { asOf: todayIso(), staleDays: s.staleDays, expenseThreshold: s.expenseVarianceThreshold }).filter((f) => f.severity === "high").map((f) => f.matterId)).size;
+  const [memberships, inbox] = [await listMemberships(ctx.user.id), await getInbox(ctx)];
+  const watchCount = new Set(inbox.items.map((i) => i.matterId)).size;
   const { events, lastRead } = await withTenant(ctx.org.id, async (tx) => {
     const events = await tx.select().from(auditEvents)
       .where(and(eq(auditEvents.organizationId, ctx.org.id), inArray(auditEvents.action, ACTIVITY_ACTIONS)))

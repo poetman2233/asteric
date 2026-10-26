@@ -300,10 +300,10 @@ function scriptFlagshipMatters(ms: DemoMatter[], asOf: string, addMonths: (d: st
   const delgado: DemoMatter = {
     externalId: "KR-1843", name: "Delgado v. Corepoint Manufacturing", category: "discrimination", originalCategory: "Race disc",
     attorney: "rodriguez", source: "pacific", jurisdiction: "CA", court: "C.D. Cal.", openedOn: deOpened, status: "open", stage: "Post-discovery",
-    expensesToDate: 81_200, hours: 520, industry: "Manufacturing", size: "5,000+",
+    expensesToDate: 76_000, hours: 520, industry: "Manufacturing", size: "5,000+",
     predictions: [
       { version: 1, recordedOn: addMonths(deOpened, 0.2), low: 450_000, high: 650_000, probability: 0.7, durationMonths: 18, expense: 48_000, confidence: "medium", drivers: ["strong_comparator_evidence", "significant_damages", "disputed_liability"], reason: null, source: "prospective", stage: "Intake" },
-      { version: 2, recordedOn: latest, low: 500_000, high: 700_000, probability: 0.74, durationMonths: 22, expense: 55_000, confidence: "medium", drivers: ["strong_comparator_evidence", "significant_damages", "deep_pocket_defendant"], reason: "Comparator data produced in discovery.", source: "prospective", stage: "Discovery" },
+      { version: 2, recordedOn: latest, low: 500_000, high: 700_000, probability: 0.74, durationMonths: 22, expense: 50_000, confidence: "medium", drivers: ["strong_comparator_evidence", "significant_damages", "deep_pocket_defendant"], reason: "Comparator data produced in discovery.", source: "prospective", stage: "Discovery" },
     ],
     events: [
       { type: "matter_opened", on: deOpened, title: "Matter opened" },
@@ -318,6 +318,27 @@ function scriptFlagshipMatters(ms: DemoMatter[], asOf: string, addMonths: (d: st
     outcome: null,
     imported: false,
   };
+  // Story 1: a new high-value matter that meets the firm's $1M second-review rule.
+  const moOpened = addMonths(asOf, -0.8);
+  const moreau: DemoMatter = {
+    externalId: "KR-1902", name: "Moreau v. Cobalt Data", category: "whistleblower", originalCategory: "Whistleblower 1102.5",
+    attorney: "keller", source: "web", jurisdiction: "CA", court: "San Francisco County Superior Court", openedOn: moOpened, status: "open", stage: "Pleadings",
+    expensesToDate: 9_800, hours: 64, industry: "Technology", size: "1,000–4,999",
+    predictions: [{ version: 1, recordedOn: addMonths(moOpened, 0.1), low: 900_000, high: 1_400_000, probability: 0.72, durationMonths: 22, expense: 85_000, confidence: "medium", drivers: ["strong_documentary_evidence", "significant_damages", "deep_pocket_defendant"], reason: null, source: "prospective", stage: "Intake" }],
+    events: [{ type: "matter_opened", on: moOpened, title: "Matter opened" }, { type: "complaint_filed", on: addMonths(moOpened, 0.5), title: "Complaint filed, San Francisco County Superior Court" }],
+    offers: [], outcome: null, imported: false,
+  };
+  // Story 3: a new matter from the referral source management placed under review.
+  const haOpened = addMonths(asOf, -0.4);
+  const haddad: DemoMatter = {
+    externalId: "KR-1903", name: "Haddad v. Halden Retail Group", category: "retaliation", originalCategory: "Retaliation",
+    attorney: "okafor", source: "pacific", jurisdiction: "CA", court: "Los Angeles County Superior Court", openedOn: haOpened, status: "open", stage: "Intake",
+    expensesToDate: 2_400, hours: 18, industry: "Retail", size: "5,000+",
+    predictions: [{ version: 1, recordedOn: addMonths(haOpened, 0.1), low: 450_000, high: 700_000, probability: 0.66, durationMonths: 24, expense: 70_000, confidence: "medium", drivers: ["strong_witness_evidence", "significant_damages", "causation_risk"], reason: null, source: "prospective", stage: "Intake" }],
+    events: [{ type: "matter_opened", on: haOpened, title: "Matter opened" }],
+    offers: [], outcome: null, imported: false,
+  };
+  ms.push(moreau, haddad);
   const i1 = ms.findIndex((m) => m.externalId === "KR-1182");
   const i2 = ms.findIndex((m) => m.externalId === "KR-1843");
   if (i1 >= 0) ms[i1] = okonkwo; else ms.push(okonkwo);

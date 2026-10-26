@@ -135,6 +135,9 @@ export async function updateOrganizationAction(_: ActionResult, fd: FormData): P
       expenseVarianceThreshold: v.expenseVarianceThreshold / 100,
       analystsSeePredictionAuthors: fd.get("analystsSeePredictionAuthors") === "on",
       aiAssistEnabled: fd.get("aiAssistEnabled") === "on",
+      momentEventTypes: fd.getAll("momentEventTypes").map(String).filter((x) => /^[a-z_]{3,40}$/.test(x)),
+      momentOnOffers: fd.get("momentOnOffers") === "on",
+      momentExpenseThreshold: (() => { const n = optNum(fd, "momentExpenseThreshold"); return n != null && Number.isFinite(n) && n >= 0 ? n : null; })(),
     };
     await withTenant(ctx.org.id, async (tx) => {
       await tx.update(organizations).set({ name: v.name, timezone: v.timezone, settings }).where(eq(organizations.id, ctx.org.id));

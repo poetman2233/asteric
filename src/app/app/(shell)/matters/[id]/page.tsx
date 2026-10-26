@@ -3,7 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { pageOrgContext } from "@/server/auth/session";
 import { getMatterDetail } from "@/server/services/ledger";
-import { todayIso } from "@/server/services/portfolio";
+import { loadPortfolio, todayIso } from "@/server/services/portfolio";
+import { matterWorkflow } from "@/server/services/workflow";
+import { baselineFor } from "@/lib/assessment";
+import { MOMENT_LABEL, MOMENT_PROMPT } from "@/lib/moments";
 import { MatterActions, ProvenanceButton } from "@/components/app/MatterActions";
 import { Card, PageHead } from "@/components/ui/Blocks";
 import { Icon } from "@/components/ui/Icon";
@@ -18,12 +21,18 @@ type Pred = NonNullable<Awaited<ReturnType<typeof getMatterDetail>>>["prediction
 const SOURCE_NOTE: Record<string, string> = {
   prospective: "Recorded before the outcome was known",
   historical: "Historical estimate from imported records",
-  sandbox: "Sandbox prediction (demo workspace only)",
+  sandbox: "Sandbox assessment (demo workspace only)",
+};
+
+const DECISION_LABEL: Record<string, string> = {
+  accept: "Matter accepted", reject: "Matter rejected", refer: "Referred out", continue_investment: "Continue investment", approve_expense: "Major expense approved",
+  offer_response: "Offer response", second_review: "Second review completed", other: "Firm decision",
 };
 
 export default async function MatterPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }) {
   const { id } = await params;
-  const isNew = (await searchParams).new === "1";
+  const sp = await searchParams;
+  const isNew = sp.new === "1";
   const ctx = await pageOrgContext(`/app/matters/${id}`);
   const d = await getMatterDetail(ctx, id);
   if (!d) notFound();
@@ -37,10 +46,27 @@ export default async function MatterPage({ params, searchParams }: { params: Pro
   const elapsed = m.openedOn ? monthsBetween(m.openedOn, outcome?.resolvedOn ?? asOf) : null;
   const expVar = latest?.expectedExpense && expenses != null ? expenses / latest.expectedExpense - 1 : null;
   const latestOffer = [...d.offers].reverse().find((o) => o.direction === "defense_offer");
+  const [portfolio, wf] = [await loadPortfolio(ctx.org.id), await matterWorkflow(ctx, m.id)];
+  const baseline = baselineFor(portfolio.facts, d.category?.key ?? null, d.category?.label ?? null);
+  const openMoments = wf.moments.filter((x) => x.status === "open");
 
-  type Item = { key: string; on: string; order: number; kind: "prediction" | "event" | "offer" | "outcome"; node: React.ReactNode };
+  type Item = { key: string; on: string; order: number; kind: "prediction" | "event" | "offer" | "outcome" | "decision"; node: React.ReactNode };
   const items: Item[] = [];
-  preds.forEach((p, i) => items.push({ key: p.id, on: p.recordedAt.toISOString().slice(0, 10), order: 2, kind: "prediction", node: <PredictionCard p={p} prev={preds[i - 1] ?? null} /> }));
+  preds.forEach((p, i) => items.push({ key: p.id, on: p.recordedAt.toISOString().slice(0, 10), order: 2, kind: "prediction", node: p.isReaffirmation
+    ? (<><div className="ledger-meta"><span className="num">{date(p.recordedAt)}</span><span>Assessment confirmed · v{p.version}</span><span>{p.authorLabel}</span></div>
+        <div className="ledger-text">No change: {range(p.recoveryLow, p.recoveryHigh)} · {pct(p.probability)} favorable{p.revisionReason ? `. ${p.revisionReason}` : ""}</div></>)
+    : <PredictionCard p={p} prev={[...preds.slice(0, i)].reverse().find((x) => !x.isReaffirmation) ?? null} /> }));
+  for (const dc of wf.decisions) {
+    items.push({ key: dc.id, on: dc.decidedAt.toISOString().slice(0, 10), order: 2.5, kind: "decision",
+      node: (<><div className="ledger-meta"><span className="num">{date(dc.decidedAt)}</span><span>Firm decision</span><span>{dc.decidedLabel}</span></div>
+        <div className="ledger-title">{DECISION_LABEL[dc.type] ?? dc.type}{dc.capitalAmount ? <> · <span className="num">{usd(dc.capitalAmount)}</span> committed</> : null}</div>
+        {dc.reason ? <div className="ledger-text">{dc.reason}</div> : null}</>) });
+  }
+  for (const mo of openMoments) {
+    items.push({ key: mo.id, on: mo.createdAt.toISOString().slice(0, 10), order: 1.5, kind: "event",
+      node: (<><div className="ledger-meta"><span className="num">{date(mo.createdAt)}</span><span>Decision moment · awaiting review</span></div>
+        <div className="ledger-title">{MOMENT_LABEL[mo.type] ?? mo.type}</div>{mo.note ? <div className="ledger-text">{mo.note}</div> : null}</>) });
+  }
   for (const e of d.events) {
     if (e.type === "other" && outcome && e.occurredOn === outcome.resolvedOn) continue;
     items.push({
@@ -62,7 +88,7 @@ export default async function MatterPage({ params, searchParams }: { params: Pro
       node: (<><div className="ledger-meta"><span className="num">{date(outcome.resolvedOn)}</span><span>Outcome</span></div>
         <div className="ledger-title">{RESOLUTION_LABEL[outcome.resolutionType] ?? outcome.resolutionType}{outcome.favorable && outcome.grossRecovery != null ? <> · <span className="num">{usd(outcome.grossRecovery)}</span></> : " · No recovery"}</div>
         {initial && outcome.favorable && outcome.grossRecovery != null ? (
-          <div className="ledger-text">{outcome.grossRecovery >= initial.recoveryLow && outcome.grossRecovery <= initial.recoveryHigh ? "Inside" : outcome.grossRecovery < initial.recoveryLow ? "Below" : "Above"} the initial predicted range of {range(initial.recoveryLow, initial.recoveryHigh)}{latest && latest !== initial ? `; ${outcome.grossRecovery >= latest.recoveryLow && outcome.grossRecovery <= latest.recoveryHigh ? "inside" : "outside"} the latest (${range(latest.recoveryLow, latest.recoveryHigh)})` : ""}.</div>
+          <div className="ledger-text">{outcome.grossRecovery >= initial.recoveryLow && outcome.grossRecovery <= initial.recoveryHigh ? "Inside" : outcome.grossRecovery < initial.recoveryLow ? "Below" : "Above"} the initial assessed range of {range(initial.recoveryLow, initial.recoveryHigh)}{latest && latest !== initial ? `; ${outcome.grossRecovery >= latest.recoveryLow && outcome.grossRecovery <= latest.recoveryHigh ? "inside" : "outside"} the latest (${range(latest.recoveryLow, latest.recoveryHigh)})` : ""}.</div>
         ) : null}</>),
     });
   }
@@ -71,7 +97,15 @@ export default async function MatterPage({ params, searchParams }: { params: Pro
 
   const perms = {
     predict: ctx.can("predictions.create"), sandbox: ctx.role === "demo" && ctx.org.isDemo,
-    events: ctx.can("events.create"), outcome: ctx.can("outcomes.record"), edit: ctx.can("matters.edit"),
+    events: ctx.can("events.create"), outcome: ctx.can("outcomes.record"), edit: ctx.can("matters.edit"), decide: ctx.can("decisions.record"),
+  };
+  const flow = {
+    matterName: m.name, baseline,
+    prior: latest ? { version: latest.version, recoveryLow: latest.recoveryLow, recoveryHigh: latest.recoveryHigh, probability: latest.probability, expectedDurationMonths: latest.expectedDurationMonths, expectedExpense: latest.expectedExpense, confidence: latest.confidence, drivers: latest.drivers, recordedAt: latest.recordedAt.toISOString() } : null,
+    context: { expensesToDate: m.expensesToDate, elapsedMonths: isOpen && m.openedOn ? monthsBetween(m.openedOn, asOf) : null },
+    moments: openMoments.map((x) => ({ id: x.id, type: x.type, label: MOMENT_LABEL[x.type] ?? x.type, prompt: MOMENT_PROMPT[x.type] ?? "Has this changed your assessment?", note: x.note })),
+    events: [...d.events].reverse().slice(0, 12).map((e) => ({ id: e.id, label: `${date(e.occurredOn)} · ${e.title}` })),
+    auto: { reviewKey: sp.review ?? null, momentId: sp.moment && /^[0-9a-f-]{36}$/i.test(sp.moment) ? sp.moment : null, second: sp.second === "1" },
   };
 
   return (
@@ -81,14 +115,14 @@ export default async function MatterPage({ params, searchParams }: { params: Pro
         title={m.name}
         sub={<>{[d.category?.label ?? m.originalCategory ?? "Uncategorized", d.attorney?.name ?? "No lead attorney", m.court ?? m.jurisdiction].filter(Boolean).join(" · ")}{" · "}{isOpen ? <span className="badge badge-accent">Open · {m.proceduralStage ?? "Stage not set"}</span> : <span className="badge">Closed {date(m.closedOn)}</span>}</>}
       />
-      {isNew && !preds.length ? <div className="alert alert-success" style={{ marginBottom: 14 }}><span>Matter added. Record the initial prediction now, while the outcome is unknown: it is what calibration will measure.</span></div> : null}
+      {isNew && !preds.length ? <div className="alert alert-success" style={{ marginBottom: 14 }}><span>Matter added. Record the initial assessment now, while the outcome is unknown: it is what calibration will measure.</span></div> : null}
       <div style={{ marginBottom: 18 }}>
         <MatterActions matterId={m.id} open={isOpen} perms={perms} financials={{ expensesToDate: m.expensesToDate, attorneyHours: m.attorneyHours }}
-          prev={latest ? { version: latest.version, recoveryLow: latest.recoveryLow, recoveryHigh: latest.recoveryHigh, probability: latest.probability, expectedDurationMonths: latest.expectedDurationMonths, expectedExpense: latest.expectedExpense, confidence: latest.confidence, drivers: latest.drivers } : null} />
+          prev={latest ? { version: latest.version, recoveryLow: latest.recoveryLow, recoveryHigh: latest.recoveryHigh, probability: latest.probability, expectedDurationMonths: latest.expectedDurationMonths, expectedExpense: latest.expectedExpense, confidence: latest.confidence, drivers: latest.drivers } : null} flow={flow} />
       </div>
 
       <div className="summary" style={{ marginBottom: 20 }}>
-        <div><div className="s-k">Latest predicted range</div><div className="s-v">{latest ? range(latest.recoveryLow, latest.recoveryHigh) : "No prediction"}</div><div className="s-sub">{latest ? `v${latest.version} · ${pct(latest.probability)} favorable` : isOpen ? "Record one to start measuring" : "—"}</div></div>
+        <div><div className="s-k">Latest assessment</div><div className="s-v">{latest ? range(latest.recoveryLow, latest.recoveryHigh) : "No assessment"}</div><div className="s-sub">{latest ? `v${latest.version} · ${pct(latest.probability)} favorable` : isOpen ? "Record one to start measuring" : "—"}</div></div>
         <div><div className="s-k">{isOpen ? "Elapsed" : "Duration"}</div><div className="s-v">{elapsed != null ? months(elapsed) : "—"}</div><div className="s-sub">{latest?.expectedDurationMonths ? `Expected ${months(latest.expectedDurationMonths)}` : "No expected duration"}</div></div>
         <div><div className="s-k">Litigation expenses</div><div className="s-v">{usd(expenses)}</div><div className="s-sub">{latest?.expectedExpense ? <>Expected {usd(latest.expectedExpense)}{expVar != null ? <> · <span className={expVar > 0.25 ? "neg" : "ink2"}>{expVar > 0 ? "▲ " : expVar < 0 ? "▼ " : ""}{signedPct(expVar)}</span></> : null}</> : "No expected expense"}</div></div>
         <div><div className="s-k">Attorney hours</div><div className="s-v">{num(outcome?.attorneyHours ?? m.attorneyHours)}</div><div className="s-sub">{d.referral ? `Referral: ${d.referral.name}` : "No referral source"}</div></div>
@@ -100,7 +134,7 @@ export default async function MatterPage({ params, searchParams }: { params: Pro
       </div>
 
       <div className="split">
-        <Card title="Decision ledger" sub="Predictions are append-only. Every revision is preserved with what prompted it." actions={<ProvenanceButton importName={d.importInfo?.filename ?? null} rows={d.provenance.map((p) => ({ id: p.id, field: p.field, originalValue: p.originalValue, normalizedValue: p.normalizedValue, source: p.source, confidence: p.confidence, method: p.method, reviewerName: p.reviewerName, createdAt: p.createdAt.toISOString(), entityType: p.entityType }))} />}>
+        <Card title="Decision ledger" sub="Assessments, decisions, events and outcomes. Assessments are append-only; every revision is preserved with what prompted it." actions={<ProvenanceButton importName={d.importInfo?.filename ?? null} rows={d.provenance.map((p) => ({ id: p.id, field: p.field, originalValue: p.originalValue, normalizedValue: p.normalizedValue, source: p.source, confidence: p.confidence, method: p.method, reviewerName: p.reviewerName, createdAt: p.createdAt.toISOString(), entityType: p.entityType }))} />}>
           {items.length ? (
             <ol className="ledger" style={{ listStyle: "none", margin: 0 }}>
               {items.map((it) => <li key={it.key} className="ledger-item" data-kind={it.kind}><span className="ledger-dot" aria-hidden="true" />{it.node}</li>)}
@@ -148,7 +182,7 @@ function PredictionCard({ p, prev }: { p: Pred; prev: Pred | null }) {
     <>
       <div className="ledger-meta">
         <span className="num">{date(p.recordedAt)}</span>
-        <span>{p.version > 1 ? `Revision v${p.version}` : "Initial prediction"}</span>
+        <span>{p.version > 1 ? `Assessment v${p.version}` : "Initial assessment"}</span>
         <span>{p.authorLabel}</span>
         {p.proceduralStage ? <span>{p.proceduralStage}</span> : null}
       </div>

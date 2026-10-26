@@ -37,7 +37,7 @@ export const loadPortfolio = cache(async (orgId: string): Promise<Portfolio> => 
         id: p.id, version: p.version, recordedAt: p.recordedAt.toISOString(), recoveryLow: p.recoveryLow, recoveryHigh: p.recoveryHigh,
         probability: p.probability, expectedDurationMonths: p.expectedDurationMonths, expectedExpense: p.expectedExpense,
         confidence: p.confidence, source: p.source, authorAttorneyId: p.authorAttorneyId, authorLabel: p.authorLabel,
-        revisionReason: p.revisionReason, proceduralStage: p.proceduralStage,
+        revisionReason: p.revisionReason, proceduralStage: p.proceduralStage, isReaffirmation: p.isReaffirmation,
       });
       predBy.set(p.matterId, list);
     }

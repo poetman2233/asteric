@@ -1,4 +1,7 @@
 const PATHS: Record<string, string> = {
+  inbox: "M4 13h4l2 3h4l2-3h4M4 13l2.5-7h11L20 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-5Z",
+  rules: "M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2",
+  intake: "M12 3v4M8 7h8l-1 4H9L8 7Zm-3 6h14v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6Z",
   overview: "M3 13h8V3H3v10Zm10 8h8V11h-8v10ZM3 21h8v-6H3v6ZM13 3v6h8V3h-8Z",
   matters: "M4 6h16M4 12h16M4 18h10",
   imports: "M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2",

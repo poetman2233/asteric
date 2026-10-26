@@ -115,6 +115,16 @@ In **/admin**, click **Create demo workspace**. In about 10 seconds you will hav
 
 ---
 
+### What to show in the demo (V2)
+
+After you click **Regenerate demo workspace** in `/admin`, the Decision Inbox opens on three stories:
+
+1. **Overconfidence.** Firm Learning shows that matters assessed at $1M or more were overestimated. Ana Keller turned that into the rule "Second assessment for matters forecast at $1M or more", and the new matter *Moreau v. Cobalt Data* is now in the inbox under it.
+2. **Expense drift.** *Delgado v. Corepoint* expected $50,000 in expenses but has spent $76,000 (+52%). Click **Review assessment** to update it, or **Confirm no change**.
+3. **Referral economics.** Pacific Labor Referral Group has the lowest return on legal capital. It was placed under review, so the new Pacific matter *Haddad v. Halden Retail Group* is in the inbox.
+
+To show the full loop: open a matter, click **Assess matter** (about 30 seconds), add an event such as "Mediation held", answer "Has your view changed?", then open Firm Learning and click **Create review rule** on a finding.
+
 ## 8. Invite your first firm
 
 1. A firm asks for access through **Request access** on your site. Their request appears in **/admin → Access requests**. You can also provision a firm directly with **Provision an organization**.

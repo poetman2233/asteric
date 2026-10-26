@@ -1,6 +1,8 @@
-# V2 roadmap
+# Roadmap
 
-What V1 deliberately does not do, roughly in priority order. Each item notes why it was deferred.
+**Shipped in V2:** Quick Case Assessment, Decision Moments, Decision Inbox, Firm Review Rules, Firm Learning (findings with actions), firm decision records, declined and referred intake, and Decision Benchmarks wording for the Network preview. Moments fire from a single service (`fireMoment`), so a future CMS sync can open the same moments.
+
+What the product still deliberately does not do, roughly in priority order. Each item notes why it was deferred.
 
 ## Data in
 

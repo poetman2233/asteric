@@ -14,7 +14,7 @@ export default async function OrganizationPage() {
       {ctx.org.isDemo ? <div className="alert alert-info"><span>Settings for the demonstration organization are fixed.</span></div> : null}
       <Card title="Organization">
         <OrganizationForm editable={ctx.can("org.manage") && !ctx.org.isDemo} aiConfigured={config.aiProvider !== "none"}
-          v={{ name: ctx.org.name, timezone: ctx.org.timezone, attorneyHourlyCost: s.attorneyHourlyCost, defaultContingencyRate: s.defaultContingencyRate, expensesReimbursedFromRecovery: s.expensesReimbursedFromRecovery, staleDays: s.staleDays, expenseVarianceThreshold: s.expenseVarianceThreshold, analystsSeePredictionAuthors: s.analystsSeePredictionAuthors, aiAssistEnabled: s.aiAssistEnabled }} />
+          v={{ name: ctx.org.name, timezone: ctx.org.timezone, attorneyHourlyCost: s.attorneyHourlyCost, defaultContingencyRate: s.defaultContingencyRate, expensesReimbursedFromRecovery: s.expensesReimbursedFromRecovery, staleDays: s.staleDays, expenseVarianceThreshold: s.expenseVarianceThreshold, analystsSeePredictionAuthors: s.analystsSeePredictionAuthors, aiAssistEnabled: s.aiAssistEnabled, momentEventTypes: s.momentEventTypes, momentOnOffers: s.momentOnOffers, momentExpenseThreshold: s.momentExpenseThreshold }} />
       </Card>
     </div>
   );
