@@ -29,9 +29,9 @@ export function proxy(request: NextRequest) {
   const csp = [
     `default-src 'self'`,
     `script-src ${scriptSrc}`,
-    `style-src 'self' 'unsafe-inline'`,
+    `style-src 'self' 'unsafe-inline'${isLanding ? " https://fonts.googleapis.com" : ""}`,
     `img-src 'self' data: blob:`,
-    `font-src 'self'`,
+    `font-src 'self'${isLanding ? " https://fonts.gstatic.com" : ""}`,
     `connect-src 'self'${isDev ? " ws:" : ""}`,
     `frame-ancestors 'none'`,
     `base-uri 'self'`,

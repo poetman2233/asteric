@@ -1,442 +1,738 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Asteric</title>
-<meta name="description" content="Asteric is the decision intelligence layer for contingency litigation: a structured record of what your firm believed, what it committed, and what happened." />
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="stylesheet" href="/fonts/fonts.css" />
-<link rel="stylesheet" href="/landing/landing.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asteric — Decision intelligence for contingency litigation</title>
+<meta name="description" content="Asteric records what your firm believed before the outcome was known, then measures judgment, economics and capital allocation against what actually happened.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   Asteric — cinematic landing (standalone)
+   Brand tokens match public/landing/landing.css and src/styles/app.css
+   ========================================================= */
+:root{
+  --bg:#FFFFFF; --frost:#F3F8FF; --vapor:#EDEEF2; --surface-2:#FAFBFC;
+  --ink:#18181B; --ink-2:#5E616E; --muted:#686B78; --faint:#AFB3C4;
+  --line:#E4E4E7; --line-soft:#ECEDF1;
+  --accent:#3C83F6; --accent-ink:#1F5FCF; --accent-btn:#2A6FE6; --accent-soft:rgba(60,131,246,.08);
+  --pos:#1F7A4D; --neg:#B42318;
+  --serif:"EB Garamond", Georgia, "Times New Roman", serif;
+  --font:"Geist", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --shadow:0 1px 0 rgba(24,24,27,.02), 0 30px 60px -34px rgba(20,40,90,.18), 0 12px 30px -20px rgba(20,40,90,.10);
+  --wrap:1216px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1012;--surface-2:#16171a;--ink:#f4f4f5;--ink-2:#b4b6be;--muted:#9a9ca6;--line:#2a2b30;--line-soft:#222327}}
+:root[data-theme="dark"]{--bg:#0f1012;--surface-2:#16171a;--ink:#f4f4f5;--ink-2:#b4b6be;--muted:#9a9ca6;--line:#2a2b30;--line-soft:#222327}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+.skip{position:absolute;left:-9999px;top:8px;z-index:300;background:var(--ink);color:#fff;padding:10px 14px;border-radius:8px}
+.skip:focus{left:12px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono)}
+
+/* ---------- canvas ---------- */
+#field{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;transition:opacity .2s linear}
+
+/* ---------- nav ---------- */
+.nav{position:fixed;inset:0 0 auto 0;z-index:100;transition:background .4s var(--ease),border-color .4s var(--ease),transform .5s var(--ease);border-bottom:1px solid transparent}
+.nav[data-solid="true"]{background:rgba(255,255,255,.78);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-color:var(--line-soft)}
+.nav[data-hidden="true"]{transform:translateY(-100%)}
+.nav__in{max-width:calc(var(--wrap) + 80px);margin:0 auto;padding:0 40px;height:68px;display:flex;align-items:center;gap:26px}
+.brand{display:inline-flex;align-items:center;gap:9px;margin-right:auto;font-weight:600;font-size:17px;letter-spacing:-.02em}
+.brand svg{display:block;transition:transform .5s var(--ease)}
+.brand:hover svg{transform:rotate(45deg)}
+.nav__links{display:flex;gap:22px;font-size:14px;color:var(--ink-2)}
+.nav__links a:hover{color:var(--ink)}
+.nav__login{font-size:14px;color:var(--ink-2)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:500 14.5px/1 var(--font);letter-spacing:-.01em;padding:11px 18px;border-radius:4px;border:1px solid transparent;cursor:pointer;transition:background .2s,border-color .2s,box-shadow .2s}
+.btn--ink{background:var(--ink);color:#fff}
+.btn--ink:hover{background:#2a2a30}
+.btn--blue{background:var(--accent-btn);color:#fff;box-shadow:0 0 0 .5px #0544a5,inset 0 -1px 0 #022c70,inset 0 .5px 0 #81b6ff}
+.btn--blue:hover{background:#2263d4}
+.btn--line{background:#fff;color:var(--ink);border-color:var(--line)}
+.btn--line:hover{border-color:#cfd1d8}
+
+/* ---------- chapters ---------- */
+main{position:relative;z-index:1}
+.ch{position:relative}
+.stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
+.wrap{max-width:calc(var(--wrap) + 80px);margin:0 auto;padding:0 40px;height:100%;position:relative}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:12.5px;font-weight:500;letter-spacing:.02em;color:var(--accent-ink);margin:0 0 18px}
+.eyebrow::before{content:"";width:22px;height:1px;background:var(--accent);opacity:.6}
+.h2{font-family:var(--serif);font-weight:500;font-size:clamp(32px,3.6vw,50px);line-height:1.06;letter-spacing:-.016em;margin:0}
+.lede{font-size:16.5px;color:var(--ink-2);margin:20px 0 0;max-width:430px;line-height:1.6;text-wrap:pretty}
+.fine{font-size:12px;color:var(--muted);line-height:1.5}
+.col-copy{position:absolute;left:40px;top:50%;transform:translateY(-50%);width:min(420px,36%);z-index:3}
+.col-visual{position:absolute;right:40px;top:50%;transform:translateY(-50%);width:min(640px,56%);z-index:3}
+
+/* reveal helper driven by JS (--r: 0..1) */
+[data-rv]{opacity:var(--r,0);transform:translateY(calc((1 - var(--r,0)) * 18px))}
+
+/* ---------- product UI (adapted from src/styles/app.css) ---------- */
+.ui{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);font-size:13px;color:var(--ink);overflow:hidden}
+.ui-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line-soft)}
+.ui-title{font-size:14px;font-weight:550;letter-spacing:-.01em;margin:0}
+.ui-sub{font-size:11.5px;color:var(--muted);margin:2px 0 0}
+.ui-body{padding:16px 18px}
+.ui-link{font-size:12px;color:var(--accent-ink);display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;background:var(--vapor);color:var(--ink-2);font-size:11px;font-weight:500;white-space:nowrap}
+.badge--blue{background:var(--frost);color:var(--accent-ink)}
+.badge--out{background:#fff;border:1px solid var(--line);color:var(--ink-2)}
+.lock{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.pred{border:1px solid rgba(60,131,246,.28);border-radius:10px;background:linear-gradient(180deg,#fbfdff,#f6f9ff);padding:12px 14px}
+.pred-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:10px 14px}
+.pk{font-size:11px;color:var(--muted)}
+.pv{font-size:14px;font-weight:550;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.pd{font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.drivers{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;box-shadow:var(--shadow)}
+.kpi{padding:13px 15px;border-right:1px solid var(--line-soft)}
+.kpi:last-child{border-right:0}
+.kpi-k{font-size:11px;color:var(--ink-2)}
+.kpi-v{font-size:21px;font-weight:550;letter-spacing:-.025em;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi-f{font-size:10.5px;color:var(--muted);margin-top:2px}
+.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px}
+.tbl th{background:var(--surface-2);text-align:left;font-weight:500;font-size:11px;color:var(--ink-2);padding:8px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:9px 12px;border-bottom:1px solid var(--line-soft);white-space:nowrap;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tbl .r{text-align:right;font-variant-numeric:tabular-nums}
+.cp{font-weight:500;color:var(--ink)}
+.cs{display:block;font-size:10.5px;color:var(--muted)}
+.sev{display:inline-block;width:3px;height:22px;border-radius:2px;background:var(--faint);vertical-align:middle;margin-right:8px}
+.sev[data-s="high"]{background:var(--neg)}
+.sev[data-s="medium"]{background:#8a8d96}
+.neg{color:var(--neg)} .pos{color:var(--pos)} .ink2{color:var(--ink-2)} .muted{color:var(--muted)}
+
+/* ---------- HERO ---------- */
+#hero{height:380vh}
+.hero-copy{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 24px;z-index:4}
+.hero-mark{color:var(--ink);margin-bottom:26px}
+.hero-title{font-family:var(--serif);font-weight:500;font-size:clamp(40px,6.1vw,82px);line-height:1.02;letter-spacing:-.02em;margin:0;max-width:19ch;text-wrap:balance}
+.hero-sub{font-size:clamp(15.5px,1.35vw,18px);color:var(--ink-2);max-width:560px;margin:26px auto 0;line-height:1.55;text-wrap:pretty}
+.hero-cta{display:flex;gap:10px;justify-content:center;margin-top:32px;flex-wrap:wrap}
+.cue{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:4}
+.cue i{width:1px;height:34px;background:linear-gradient(var(--faint),transparent);display:block;animation:cue 2.2s var(--ease) infinite}
+@keyframes cue{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+.hero-scene{position:absolute;inset:0;z-index:5;pointer-events:none}
+.mcard,.ocard{position:absolute;left:50%;top:50%;width:min(440px,calc(100vw - 32px));pointer-events:auto}
+.mcard{transform:translate(-50%,-50%)}
+.ocard{transform:translate(-50%,-50%)}
+.mcard .ui,.ocard .ui{border-radius:16px}
+.mmeta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--muted)}
+.mname{font-size:16px;font-weight:550;letter-spacing:-.015em;margin:6px 0 2px}
+.bigrow{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-top:14px}
+.bigk{font-size:11px;color:var(--muted)}
+.bigv{font-size:22px;font-weight:550;letter-spacing:-.025em;font-variant-numeric:tabular-nums}
+.tl{position:absolute;left:50%;bottom:11vh;transform:translateX(-50%);width:min(560px,calc(100vw - 48px));z-index:6}
+.tl-bar{position:relative;height:2px;background:var(--line);border-radius:2px}
+.tl-fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:2px;width:0}
+.tl-knob{position:absolute;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:#fff;border:2px solid var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.tl-ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:10px}
+.tl-now{text-align:center;font-size:12.5px;color:var(--ink-2);margin-bottom:12px;font-variant-numeric:tabular-nums}
+.hero-cap{position:absolute;left:50%;top:13vh;transform:translateX(-50%);width:min(680px,calc(100vw - 40px));text-align:center;z-index:6}
+.hero-cap p{font-family:var(--serif);font-size:clamp(24px,2.6vw,34px);line-height:1.18;letter-spacing:-.01em;margin:0}
+.ghost-label{position:absolute;top:-26px;left:2px;font-size:11px;color:var(--muted);display:flex;gap:6px;align-items:center;white-space:nowrap}
+
+/* ---------- LEDGER ---------- */
+#ledger{height:440vh}
+.rail{list-style:none;margin:30px 0 0;padding:0;display:grid;gap:2px}
+.rail li{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--faint);padding:6px 0;transition:color .3s}
+.rail li::before{display:none;content:"";width:7px;height:7px;border-radius:50%;border:1.5px solid currentColor;flex:none;transition:background .3s,border-color .3s}
+.rail li.on{color:var(--ink-2)}
+.rail li.cur{color:var(--ink);font-weight:500}
+.rail li.cur::before{background:var(--accent);border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.ledger-ui{max-height:78vh;display:flex;flex-direction:column}
+.ledger-win{overflow:hidden;position:relative;flex:1;min-height:0}
+.ledger-list{list-style:none;margin:0;padding:18px 18px 22px 44px;position:relative;transition:transform .7s var(--ease)}
+.ledger-list::before{content:"";position:absolute;left:26px;top:24px;bottom:30px;width:1px;background:var(--line)}
+.li{position:relative;padding-bottom:16px;opacity:.12;transform:translateY(8px);transition:opacity .6s var(--ease),transform .6s var(--ease)}
+.li.on{opacity:1;transform:none}
+.li:last-child{padding-bottom:0}
+.dot{position:absolute;left:-22px;top:5px;width:9px;height:9px;border-radius:50%;background:#fff;border:2px solid var(--faint)}
+.li[data-k="pred"] .dot{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.li[data-k="out"] .dot{border-color:var(--ink);background:var(--ink)}
+.li[data-k="offer"] .dot{border-color:var(--ink-2)}
+.lm{font-size:11.5px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+.lt{font-size:13.5px;font-weight:550;margin:1px 0 0}
+.lx{font-size:12.5px;color:var(--ink-2);margin-top:2px}
+.offers{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{font-size:11.5px;border:1px solid var(--line);border-radius:6px;padding:3px 7px;background:#fff;font-variant-numeric:tabular-nums}
+.chip b{font-weight:550}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line-soft);background:var(--surface-2)}
+.summary>div{padding:10px 14px;border-right:1px solid var(--line-soft)}
+.summary>div:last-child{border-right:0}
+.sk{font-size:10.5px;color:var(--muted)} .sv{font-size:13.5px;font-weight:550;font-variant-numeric:tabular-nums}
+
+/* ---------- PORTFOLIO ---------- */
+#portfolio{height:280vh}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin-top:22px}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.port-kpis{position:absolute;right:40px;bottom:8vh;width:min(640px,56%);z-index:4}
+
+/* ---------- CALIBRATION ---------- */
+#calibration{height:300vh}
+.stat{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;margin-top:26px;box-shadow:var(--shadow)}
+.stat div{padding:12px 14px;border-right:1px solid var(--line-soft)}
+.stat div:last-child{border-right:0}
+.stat b{display:block;font-size:20px;font-weight:550;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;color:var(--muted)}
+.finding{margin-top:16px}
+.finding .k{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--accent-ink);font-weight:550}
+.finding p{margin:4px 0 0;font-size:14.5px;font-weight:550;letter-spacing:-.01em;line-height:1.35}
+.finding .m{font-size:11.5px;color:var(--muted);margin-top:4px}
+
+/* ---------- ECONOMICS ---------- */
+#economics{height:320vh}
+.econ{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:84px 40px 40px;max-width:calc(var(--wrap) + 80px);margin:0 auto}
+.econ-head{display:flex;justify-content:space-between;align-items:flex-end;gap:40px;margin-bottom:28px}
+.econ-head .lede{margin-top:0;max-width:420px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.mx .ui-body{padding:14px 18px 16px}
+.mrow{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed var(--line-soft);font-size:12.5px;opacity:.15;transition:opacity .5s var(--ease)}
+.mrow.on{opacity:1}
+.mrow span:first-child{color:var(--ink-2)}
+.mrow b{font-weight:550;font-variant-numeric:tabular-nums}
+.mrow.big{border-bottom:0;padding-top:10px}
+.bars{margin-top:12px;display:grid;gap:7px}
+.bar{display:grid;grid-template-columns:62px 1fr 76px;gap:8px;align-items:center;font-size:11px;color:var(--ink-2)}
+.bar-t{height:8px;border-radius:0 4px 4px 0;background:var(--vapor);overflow:hidden}
+.bar-f{height:100%;border-radius:0 4px 4px 0;background:var(--accent);transform-origin:left;transform:scaleX(0);transition:transform .8s var(--ease)}
+.bar-f.cap{background:var(--faint)}
+.bar span:last-child{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+.rolc{display:flex;align-items:baseline;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft)}
+.rolc .v{font-size:34px;font-weight:550;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.verdict{text-align:center;margin-top:22px;font-family:var(--serif);font-size:clamp(20px,2vw,26px);line-height:1.25}
+.econ-more{position:relative;z-index:2;background:#fff;padding:90px 0 110px}
+.econ-more .in{max-width:calc(var(--wrap) + 80px);margin:0 auto;padding:0 40px;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:56px;align-items:start}
+.h3{font-family:var(--serif);font-weight:500;font-size:clamp(26px,2.6vw,36px);line-height:1.1;letter-spacing:-.012em;margin:0}
+
+/* ---------- WATCH ---------- */
+#watch{height:300vh}
+.drift{display:grid;gap:10px;margin-top:26px}
+.drift-row{display:grid;grid-template-columns:86px 1fr;gap:10px;align-items:center;font-size:11.5px;color:var(--ink-2)}
+.drift-t{position:relative;height:10px;background:var(--vapor);border-radius:5px}
+.drift-f{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--accent)}
+.drift-f.over{background:var(--neg)}
+.drift-m{position:absolute;top:-4px;bottom:-4px;width:1.5px;background:var(--ink)}
+.drift-l{font-size:10.5px;color:var(--muted);margin-top:3px;display:flex;justify-content:space-between}
+.wrow{opacity:0;transform:translateX(10px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
+.wrow.on{opacity:1;transform:none}
+
+/* ---------- NETWORK ---------- */
+#network{height:300vh}
+.preview{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--ink);border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px 5px 9px;margin-bottom:18px}
+.preview i{width:6px;height:6px;border-radius:50%;background:var(--faint)}
+.disclaim{margin-top:22px;border:1px solid var(--line);background:rgba(255,255,255,.86);border-radius:12px;padding:13px 15px;font-size:12.5px;color:var(--ink-2);line-height:1.5}
+.disclaim b{color:var(--ink);font-weight:550}
+
+/* ---------- PRODUCT ---------- */
+#product{height:420vh;background:linear-gradient(#fff0,#fff 12%)}
+#product .stage{display:flex;flex-direction:column;align-items:center;padding:9vh 0 4vh}
+.prod-head{position:relative;text-align:center;z-index:3;padding:0 24px;flex:none}
+.prod-head .h2{font-size:clamp(30px,3.2vw,44px)}
+.prod-head p{color:var(--ink-2);margin:12px auto 0;max-width:520px;font-size:15px}
+.tabs{display:inline-flex;gap:2px;margin-top:20px;background:var(--vapor);border-radius:8px;padding:3px}
+.tabs button{font:500 12.5px var(--font);border:0;background:transparent;color:var(--ink-2);padding:7px 12px;border-radius:6px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.frame{position:relative;margin-top:22px;flex:1;width:min(1120px,calc(100vw - 64px));min-height:0;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 50px 100px -50px rgba(20,40,90,.35),0 18px 40px -26px rgba(20,40,90,.2);overflow:hidden;display:grid;grid-template-columns:200px 1fr;z-index:3}
+.f-side{border-right:1px solid var(--line-soft);background:var(--surface-2);padding:14px 10px;font-size:12.5px;display:flex;flex-direction:column;gap:2px;overflow:hidden}
+.f-brand{display:flex;align-items:center;gap:7px;font-weight:600;padding:4px 8px 12px;font-size:13.5px}
+.f-org{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 9px;margin:0 2px 10px}
+.f-org b{display:block;font-size:12px;font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.f-org span{font-size:10.5px;color:var(--muted)}
+.f-nav{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;color:var(--ink-2)}
+.f-nav[aria-current="page"]{background:#fff;color:var(--ink);font-weight:500;box-shadow:0 0 0 1px var(--line)}
+.f-nav .c{margin-left:auto;font-size:10.5px;color:var(--muted)}
+.f-eb{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:12px 8px 4px}
+.f-main{display:flex;flex-direction:column;min-width:0}
+.f-banner{background:var(--frost);color:var(--accent-ink);font-size:11.5px;padding:7px 16px;border-bottom:1px solid #e3edfc}
+.f-top{height:44px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;padding:0 16px}
+.f-search{border:1px solid var(--line);border-radius:6px;height:28px;width:min(320px,60%);display:flex;align-items:center;padding:0 10px;font-size:11.5px;color:var(--muted);gap:8px}
+.f-search .k{margin-left:auto;font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.f-view{flex:1;overflow:hidden;position:relative}
+.screen{position:absolute;inset:0;padding:18px 22px;overflow:hidden;opacity:0;transform:translateY(10px);transition:opacity .5s var(--ease),transform .5s var(--ease);pointer-events:none}
+.screen.on{opacity:1;transform:none;pointer-events:auto}
+.s-title{font-size:20px;font-weight:550;letter-spacing:-.02em;margin:0}
+.s-sub{font-size:12px;color:var(--ink-2);margin:3px 0 14px}
+.tblwrap{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+
+/* ---------- SECURITY / CTA / FOOTER ---------- */
+.sec{position:relative;z-index:2;background:#fff;padding:120px 0 40px;border-top:1px solid var(--line-soft)}
+.sec .in{max-width:calc(var(--wrap) + 80px);margin:0 auto;padding:0 40px}
+.sec-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);border-radius:14px;overflow:hidden;margin-top:44px}
+.sec-item{background:#fff;padding:22px 22px 24px}
+.sec-item h3{font-size:14.5px;font-weight:550;margin:12px 0 6px;letter-spacing:-.01em}
+.sec-item p{font-size:13px;color:var(--ink-2);margin:0;line-height:1.55}
+.sec-item svg{color:var(--accent)}
+.sec-note{font-size:12.5px;color:var(--muted);margin-top:18px}
+.cta{position:relative;z-index:2;background:#fff;padding:110px 0 120px;text-align:center}
+.cta .h2{max-width:16ch;margin:0 auto}
+.cta p{color:var(--ink-2);margin:18px auto 0;max-width:500px}
+.cta .hero-cta{margin-top:30px}
+.foot{position:relative;z-index:2;background:#fff;border-top:1px solid var(--line-soft);padding:36px 0 44px;font-size:13px;color:var(--ink-2)}
+.foot .in{max-width:calc(var(--wrap) + 80px);margin:0 auto;padding:0 40px;display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.foot nav{display:flex;gap:22px;flex-wrap:wrap}
+.foot a:hover{color:var(--ink)}
+
+/* ---------- responsive ---------- */
+@media (max-width:1000px){
+  .nav__links{display:none}
+  .wrap,.nav__in{padding:0 20px}
+  .col-copy{left:20px;right:20px;top:12vh;transform:none;width:auto}
+  .col-visual{left:16px;right:16px;top:auto;bottom:5vh;transform:none;width:auto}
+  .lede{font-size:15px;margin-top:12px;max-width:none}
+  .h2{font-size:clamp(28px,7.4vw,40px)}
+  .rail{display:none}
+  .ledger-ui{max-height:56vh}
+  .port-kpis{left:16px;right:16px;width:auto;bottom:4vh}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .kpi:nth-child(2){border-right:0}
+  .kpi:nth-child(-n+2){border-bottom:1px solid var(--line-soft)}
+  .stat{margin-top:16px}
+  .finding{display:none}
+  .econ{padding:76px 16px 20px;justify-content:flex-start}
+  .econ-head{display:block;margin-bottom:14px}
+  .econ-head .lede{margin-top:10px}
+  .pair{grid-template-columns:1fr 1fr;gap:8px}
+  .mx .ui-head{padding:10px 11px}
+  .mx .ui-body{padding:8px 11px 10px}
+  .mrow{font-size:11px;padding:4px 0}
+  .mrow.hide-sm{display:none}
+  .bar{grid-template-columns:44px 1fr 54px;font-size:10px}
+  .rolc .v{font-size:24px}
+  .verdict{font-size:17px;margin-top:12px}
+  .econ-more .in{grid-template-columns:1fr;gap:28px;padding:0 16px}
+  .drift{display:none}
+  .frame{grid-template-columns:1fr;width:calc(100vw - 24px);margin-top:14px}
+  #product .stage{padding:8vh 0 2vh}
+  .f-side{display:none}
+  .screen{padding:14px}
+  .sec-grid{grid-template-columns:1fr 1fr}
+  .sec .in,.foot .in{padding:0 20px}
+  .tl{bottom:6vh}
+  .hero-cap{top:9vh}
+  .hero-cap p{font-size:21px}
+  .ghost-label{display:none}
+  .mh{display:none}
+  .flagd{display:none!important}
+  #watch .col-visual{max-height:54vh;overflow:hidden;border-radius:14px}
+  .tl.late{opacity:0!important}
+  #watch .tbl td,#watch .tbl th{white-space:normal;padding:8px 9px}
+  #watch .tbl td:nth-child(2){min-width:0!important}
+}
+@media (max-width:560px){
+  .sec-grid{grid-template-columns:1fr}
+  .nav__login{display:none}
+  .tabs{flex-wrap:wrap;justify-content:center}
+  .bigv{font-size:19px}
+}
+
+/* ---------- reduced motion: static, fully readable story ---------- */
+html.rm .ch{height:auto!important}
+html.rm .stage{position:relative;height:auto;min-height:100vh;overflow:visible;padding:110px 0 70px}
+html.rm .col-copy,html.rm .col-visual,html.rm .port-kpis{position:relative;inset:auto;transform:none;width:auto;left:auto;right:auto;top:auto;bottom:auto;margin:0 40px 28px}
+html.rm [data-rv]{opacity:1!important;transform:none!important}
+html.rm .li,html.rm .mrow,html.rm .wrow{opacity:1!important;transform:none!important}
+html.rm .bar-f{transform:scaleX(var(--w,1))!important;transition:none}
+html.rm .hero-copy{position:relative;min-height:100vh}
+html.rm .hero-scene{position:relative;height:640px}
+html.rm .cue,html.rm .tl{display:none}
+html.rm .econ{position:relative;inset:auto}
+html.rm .frame{height:560px;flex:none}
+html.rm .screen{transition:none}
+html.rm .ledger-list{transform:none!important}
+html.rm .ledger-ui{max-height:none}
+@media (min-width:1001px){ html.rm .col-copy{max-width:min(440px,38%)} }
+@media (prefers-reduced-motion:reduce){ .cue i{animation:none} }
+</style>
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to content</a>
-  <canvas id="constellation" aria-hidden="true"></canvas>
+<a class="skip" href="#main">Skip to content</a>
+<canvas id="field" aria-hidden="true"></canvas>
 
-  <!-- ================= NAV ================= -->
-  <header class="nav" id="nav" data-scrolled="false">
-    <div class="nav__inner wrap">
-      <a class="brand" href="#top" aria-label="Asteric, home">
-        <span class="brand__mark" aria-hidden="true">
-          <svg viewBox="0 0 40 40" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-            <line x1="20" y1="4" x2="20" y2="36"/>
-            <line x1="4" y1="20" x2="36" y2="20"/>
-            <line x1="10.5" y1="10.5" x2="29.5" y2="29.5"/>
-            <line x1="29.5" y1="10.5" x2="10.5" y2="29.5"/>
-            <circle cx="20" cy="20" r="2.4" fill="currentColor" stroke="none"/>
-            <circle cx="20" cy="4" r="1.5" fill="currentColor" stroke="none"/>
-            <circle cx="36" cy="20" r="1.5" fill="currentColor" stroke="none"/>
-          </svg>
-        </span>
-        <span class="brand__word">Asteric</span>
-      </a>
+<header class="nav" id="nav">
+  <div class="nav__in">
+    <a class="brand" href="#top" aria-label="Asteric, home">
+      <svg viewBox="0 0 40 40" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="10.5" y1="10.5" x2="29.5" y2="29.5"/><line x1="29.5" y1="10.5" x2="10.5" y2="29.5"/><circle cx="20" cy="20" r="2.4" fill="currentColor" stroke="none"/><circle cx="20" cy="4" r="1.5" fill="currentColor" stroke="none"/><circle cx="36" cy="20" r="1.5" fill="currentColor" stroke="none"/></svg>
+      Asteric
+    </a>
+    <nav class="nav__links" aria-label="Primary">
+      <a href="#ledger">Ledger</a><a href="#calibration">Calibration</a><a href="#economics">Economics</a><a href="#watch">Portfolio Watch</a><a href="#security">Security</a>
+    </nav>
+    <a class="nav__login" href="/login">Log in</a>
+    <a class="btn btn--ink" href="/request-access">Request access</a>
+  </div>
+</header>
 
-      <nav class="nav__links" aria-label="Primary">
-        <a href="#ledger">Ledger</a>
-        <a href="#calibration">Calibration</a>
-        <a href="#economics">Economics</a>
-        <a href="#faq">FAQ</a>
-      </nav>
+<main id="main">
+<span id="top"></span>
 
-      <a class="nav__login" href="/login">Log in</a>
-      <a class="btn btn--ink nav__cta" href="/request-access">Request access</a>
+<!-- 1 · HERO ============================================================ -->
+<section class="ch" id="hero" data-ch="hero" aria-label="Introduction">
+  <div class="stage">
+    <div class="hero-copy" id="heroCopy">
+      <div class="hero-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="3" x2="20" y2="37"/><line x1="3" y1="20" x2="37" y2="20"/><line x1="9.5" y1="9.5" x2="30.5" y2="30.5"/><line x1="30.5" y1="9.5" x2="9.5" y2="30.5"/><circle cx="20" cy="20" r="2.6" fill="currentColor" stroke="none"/><circle cx="20" cy="3" r="1.5" fill="currentColor" stroke="none"/><circle cx="37" cy="20" r="1.5" fill="currentColor" stroke="none"/><circle cx="30.5" cy="9.5" r="1.3" fill="currentColor" stroke="none"/></svg>
+      </div>
+      <h1 class="hero-title">Turn legal outcomes into intelligence.</h1>
+      <p class="hero-sub">Asteric records what your firm believed before the outcome was known, then measures judgment, economics and capital allocation against what actually happened.</p>
+      <div class="hero-cta">
+        <a class="btn btn--blue" href="/request-access">Request access</a>
+        <a class="btn btn--line" href="/login">Explore the demo</a>
+      </div>
     </div>
-  </header>
+    <div class="cue" id="cue" aria-hidden="true"><span>Scroll</span><i></i></div>
 
-  <main id="main">
-    <span id="top"></span>
+    <div class="hero-scene" id="heroScene">
+      <div class="hero-cap" id="heroCap1" data-rv><p>Every matter starts as a judgment call.</p></div>
+      <div class="hero-cap" id="heroCap2" data-rv><p>Asteric preserves what your firm believed <em>before</em> the outcome was known.</p></div>
 
-    <!-- ================= HERO ================= -->
-    <section class="hero">
-      <div class="hero__copy wrap">
-        <div class="hero__mark" id="heroMark" aria-hidden="true">
-          <svg viewBox="0 0 40 40" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
-            <line x1="20" y1="3" x2="20" y2="37"/>
-            <line x1="3" y1="20" x2="37" y2="20"/>
-            <line x1="9.5" y1="9.5" x2="30.5" y2="30.5"/>
-            <line x1="30.5" y1="9.5" x2="9.5" y2="30.5"/>
-            <circle cx="20" cy="20" r="2.6" fill="currentColor" stroke="none"/>
-            <circle cx="20" cy="3" r="1.5" fill="currentColor" stroke="none"/>
-            <circle cx="37" cy="20" r="1.5" fill="currentColor" stroke="none"/>
-            <circle cx="30.5" cy="9.5" r="1.3" fill="currentColor" stroke="none"/>
-          </svg>
-        </div>
-        <h1 class="hero__title" data-reveal>
-          Turn legal outcomes into intelligence.
-        </h1>
-        <p class="hero__sub" data-reveal>
-          Every dispute your firm resolves is a single point of data. Asteric
-          connects those points into a private network, surfacing settlement
-          patterns that no individual case can reveal.
-        </p>
-        <div class="hero__cta" data-reveal>
-          <a class="btn btn--ink" href="/request-access">Request access</a>
-          <a class="btn btn--quiet" href="#ledger">See how it works</a>
-        </div>
-        <p class="hero__note" data-reveal>Built for plaintiff-side employment, PI, and mass-tort practices.</p>
-      </div>
-
-      <!-- Hero product surface: dark glass dashboard -->
-      <div class="hero__surface" data-reveal data-parallax="0.06">
-        <div class="glass glass--wide">
-          <div class="glass__bar">
-            <span class="glass__title">Portfolio · Keller &amp; Ross Employment Law</span>
-            <span class="glass__meta">600 closed matters · illustrative</span>
-          </div>
-          <div class="kpis">
-            <div class="kpi">
-              <span class="kpi__label">Brier score</span>
-              <span class="kpi__value" data-count data-to="0.18" data-dp="2">0.00</span>
-              <span class="kpi__foot">lower is better</span>
+      <div class="mcard" id="mcard">
+        <div class="ghost-label" id="ghostLabel" data-rv><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Original prediction · unchanged since Mar 14, 2024</div>
+        <div class="ui">
+          <div class="ui-body">
+            <div class="mmeta"><span class="mono">KR-1182</span><span>Wrongful termination</span><span>Jane Ross</span></div>
+            <p class="mname">Okonkwo v. Meridian Logistics</p>
+            <div class="mmeta"><span class="badge badge--blue">Initial prediction</span><span>Recorded at intake · Mar 14, 2024</span></div>
+            <div class="bigrow">
+              <div><div class="bigk">Expected recovery</div><div class="bigv">$300K–$450K</div></div>
+              <div><div class="bigk">Probability favorable</div><div class="bigv">65%</div></div>
+              <div><div class="bigk">Expected duration</div><div class="bigv">14 months</div></div>
+              <div><div class="bigk">Expected expense</div><div class="bigv">$45,000</div></div>
             </div>
-            <div class="kpi">
-              <span class="kpi__label">Median duration error</span>
-              <span class="kpi__value">+<span data-count data-to="3.2" data-dp="1">0.0</span> mo</span>
-              <span class="kpi__foot">runs longer than predicted</span>
-            </div>
-            <div class="kpi">
-              <span class="kpi__label">Return on legal capital</span>
-              <span class="kpi__value"><span data-count data-to="2.1" data-dp="1">0.0</span>&#215;</span>
-              <span class="kpi__foot">portfolio weighted</span>
-            </div>
-          </div>
-          <div class="blotter" role="table" aria-label="Sample matters">
-            <div class="blotter__head" role="row">
-              <span role="columnheader" class="h-name">Matter</span>
-              <span role="columnheader" class="h-cat">Category</span>
-              <span role="columnheader" class="h-num ta-r">Predicted</span>
-              <span role="columnheader" class="h-num ta-r">Actual</span>
-              <span role="columnheader" class="h-rolc ta-r">ROLC</span>
-            </div>
-            <div class="blotter__body" id="blotterBody" role="rowgroup"></div>
+            <div style="margin-top:14px"><span class="lock"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Locked · recorded before the outcome was known</span></div>
           </div>
         </div>
       </div>
-    </section>
 
-    <!-- ================= LOGO STRIP ================= -->
-    <section class="strip">
-      <div class="wrap">
-        <p class="strip__label" data-reveal>Imports the export you already have</p>
-        <ul class="logos" data-reveal>
-          <li>Filevine</li>
-          <li>Litify</li>
-          <li>Clio</li>
-          <li>Salesforce</li>
-          <li>SmartAdvocate</li>
-          <li>CSV / XLSX</li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- ================= FEATURE 1 · LEDGER ================= -->
-    <section class="feature" id="ledger">
-      <div class="wrap feature__grid">
-        <div class="feature__text" data-reveal>
-          <h2 class="feature__title">What you believed, preserved beside what happened.</h2>
-          <p class="feature__body">
-            Each matter becomes an immutable timeline. The first prediction, every
-            revision, the offers, and the outcome all sit in one place. Nothing is
-            overwritten, so the belief you held before you knew the result stays
-            exactly as it was.
-          </p>
-          <p class="feature__body feature__body--muted">
-            That sequence cannot be reconstructed after the fact. It only exists if
-            it was captured in the moment.
-          </p>
-        </div>
-
-        <div class="feature__surface" data-reveal data-parallax="0.05">
-          <div class="glass">
-            <div class="glass__bar">
-              <span class="glass__title">Okonkwo v. Meridian Logistics</span>
-              <span class="glass__meta">Wrongful termination</span>
+      <div class="ocard" id="ocard">
+        <div class="ui">
+          <div class="ui-body">
+            <div class="mmeta"><span class="mono">KR-1182</span><span>Outcome</span></div>
+            <p class="mname">Settled · Aug 14, 2025</p>
+            <div class="bigrow">
+              <div><div class="bigk">Gross recovery</div><div class="bigv">$475,000</div></div>
+              <div><div class="bigk">Result</div><div class="bigv">Favorable</div></div>
+              <div><div class="bigk">Actual duration</div><div class="bigv">17 months</div></div>
+              <div><div class="bigk">Litigation expenses</div><div class="bigv">$48,200</div></div>
             </div>
-            <div class="ledger">
-              <div class="ledger__item" data-kind="predict">
-                <span class="ledger__dot"></span>
-                <div class="ledger__body">
-                  <span class="ledger__when">Day 1 · prediction</span>
-                  <span class="ledger__text">$300&#8211;450K, <b>65%</b> favorable, 14 mo</span>
-                </div>
-              </div>
-              <div class="ledger__item" data-kind="event">
-                <span class="ledger__dot"></span>
-                <div class="ledger__body">
-                  <span class="ledger__when">Month 6 · discovery closed</span>
-                  <span class="ledger__text">Key custodian documents produced</span>
-                </div>
-              </div>
-              <div class="ledger__item" data-kind="revise">
-                <span class="ledger__dot"></span>
-                <div class="ledger__body">
-                  <span class="ledger__when">Month 7 · revised</span>
-                  <span class="ledger__text">$400&#8211;550K, <b>78%</b> favorable</span>
-                </div>
-              </div>
-              <div class="ledger__item" data-kind="offer">
-                <span class="ledger__dot"></span>
-                <div class="ledger__body">
-                  <span class="ledger__when">Month 15 · offer</span>
-                  <span class="ledger__text">Defendant, $420,000</span>
-                </div>
-              </div>
-              <div class="ledger__item" data-kind="outcome">
-                <span class="ledger__dot"></span>
-                <div class="ledger__body">
-                  <span class="ledger__when">Month 17 · settled</span>
-                  <span class="ledger__text"><b>$475,000</b>, net to client flagged</span>
-                </div>
-              </div>
-            </div>
+            <p class="lx" style="margin-top:14px">Above the initial range of $300K–$450K. Three months longer and $3,200 more expensive than expected at intake.</p>
           </div>
         </div>
       </div>
-    </section>
 
-    <!-- ================= FEATURE 2 · CALIBRATION ================= -->
-    <section class="feature feature--reverse" id="calibration">
-      <div class="wrap feature__grid">
-        <div class="feature__text" data-reveal>
-          <h2 class="feature__title">We grade judgment the way quant funds are graded.</h2>
-          <p class="feature__body">
-            The calibration curve plots what your partners predicted against what
-            actually happened. This firm tracks the ideal line up to about 70%
-            confidence, then runs systematically overconfident on its largest matters.
-          </p>
-          <div class="mini-stats">
-            <div class="mini-stat">
-              <span class="mini-stat__value" data-count data-to="68" data-suffix="%">0%</span>
-              <span class="mini-stat__label">in range, $200&#8211;400K</span>
-            </div>
-            <div class="mini-stat mini-stat--warn">
-              <span class="mini-stat__value" data-count data-to="31" data-suffix="%">0%</span>
-              <span class="mini-stat__label">in range, above $1M</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="feature__surface" data-reveal data-parallax="0.05">
-          <div class="glass glass--chart" id="chartGlass">
-            <div class="glass__bar">
-              <span class="glass__title">Probability of favorable resolution</span>
-              <span class="glass__meta" id="scrubProgress">n = 120</span>
-            </div>
-            <div class="chart">
-              <svg class="chart__svg" viewBox="0 0 400 300" role="img" aria-label="Calibration curve tracking the ideal line to about 70 percent, then falling below it.">
-                <g class="chart__grid">
-                  <line x1="46" y1="18" x2="46" y2="262"/>
-                  <line x1="46" y1="262" x2="384" y2="262"/>
-                  <line x1="46" y1="201" x2="384" y2="201"/>
-                  <line x1="46" y1="140" x2="384" y2="140"/>
-                  <line x1="46" y1="79" x2="384" y2="79"/>
-                  <line x1="46" y1="18" x2="384" y2="18"/>
-                </g>
-                <line class="chart__diag" x1="46" y1="262" x2="384" y2="18"/>
-                <path class="chart__curve" id="chartCurve"
-                      d="M46,262 L84,230 L122,196 L160,166 L198,140 L236,118 L274,101 L312,92 L350,86 L384,84"
-                      fill="none"/>
-                <g class="chart__point" id="chartPoint">
-                  <circle class="chart__pulse" cx="312" cy="92" r="6"/>
-                  <circle cx="312" cy="92" r="5.5"/>
-                  <line class="chart__callout" x1="312" y1="92" x2="312" y2="46"/>
-                  <text x="312" y="38" text-anchor="middle">80% said, 66% observed</text>
-                </g>
-                <text class="chart__ax" x="215" y="288" text-anchor="middle">predicted probability</text>
-                <text class="chart__ax" x="15" y="140" text-anchor="middle" transform="rotate(-90 15 140)">observed</text>
-              </svg>
-            </div>
-          </div>
-        </div>
+      <div class="tl" id="tl" data-rv>
+        <div class="tl-now num" id="tlNow">Mar 2024</div>
+        <div class="tl-bar"><div class="tl-fill" id="tlFill"></div><div class="tl-knob" id="tlKnob" style="left:0"></div></div>
+        <div class="tl-ticks"><span>Intake · Mar 2024</span><span>Discovery</span><span>Mediation</span><span>Settled · Aug 2025</span></div>
       </div>
-    </section>
-
-    <!-- ================= FEATURE 3 · ECONOMICS ================= -->
-    <section class="feature" id="economics">
-      <div class="wrap feature__grid">
-        <div class="feature__text" data-reveal>
-          <h2 class="feature__title">Your best recoveries are rarely your best economics.</h2>
-          <p class="feature__body">
-            Return on legal capital reframes the firm from maximizing settlements to
-            allocating scarce attention. Sort by it, and the picture inverts. The
-            referral source with the strongest headline numbers can quietly be the
-            worst place to spend your partners' time.
-          </p>
-        </div>
-
-        <div class="feature__surface" data-reveal data-parallax="0.05">
-          <div class="glass">
-            <div class="glass__bar">
-              <span class="glass__title">Return on legal capital</span>
-              <span class="glass__meta">by referral source</span>
-            </div>
-            <div class="rolc">
-              <div class="rolc__row">
-                <span class="rolc__name">Source A</span>
-                <span class="rolc__track"><span class="rolc__bar" data-w="86"></span></span>
-                <span class="rolc__val">3.1&#215;</span>
-              </div>
-              <div class="rolc__row">
-                <span class="rolc__name">In-house intake</span>
-                <span class="rolc__track"><span class="rolc__bar" data-w="64"></span></span>
-                <span class="rolc__val">2.3&#215;</span>
-              </div>
-              <div class="rolc__row">
-                <span class="rolc__name">Bar referral</span>
-                <span class="rolc__track"><span class="rolc__bar" data-w="41"></span></span>
-                <span class="rolc__val">1.5&#215;</span>
-              </div>
-              <div class="rolc__row rolc__row--warn">
-                <span class="rolc__name">Source B</span>
-                <span class="rolc__track"><span class="rolc__bar rolc__bar--warn" data-w="19"></span></span>
-                <span class="rolc__val rolc__val--warn">0.7&#215;</span>
-              </div>
-              <p class="rolc__note">Source B has the strongest headline recoveries and the weakest capital return.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ================= EMERGE (signature interactive) ================= -->
-    <section class="emerge" id="emerge">
-      <div class="emerge__pin">
-        <div class="emerge__head">
-          <h2 class="emerge__title">Intelligence emerges from the network.</h2>
-          <p class="emerge__cap" id="emergeCap">Every dispute is a single private data point.</p>
-          <div class="emerge__progress" aria-hidden="true"><span id="emergeBar"></span></div>
-        </div>
-        <canvas class="emerge__canvas" id="emergeCanvas" aria-hidden="true"></canvas>
-        <div class="emerge__insight" id="emergeInsight" aria-hidden="true">
-          <span class="emerge__insight-dot"></span>
-          <span class="emerge__insight-k">Emerging pattern</span>
-          <span class="emerge__insight-v">Retaliation claims filed within 90 days settle 22% higher.</span>
-        </div>
-        <p class="emerge__hint" id="emergeHint" aria-hidden="true">Scroll to reveal</p>
-      </div>
-    </section>
-
-    <!-- ================= STATEMENT ================= -->
-    <section class="statement">
-      <div class="wrap">
-        <p class="statement__line" data-reveal>
-          You start with one partner, making one prediction, about one case.
-          The network becomes valuable once that has happened a million times.
-        </p>
-      </div>
-    </section>
-
-    <!-- ================= FAQ ================= -->
-    <section class="faq" id="faq">
-      <div class="wrap faq__grid">
-        <div class="faq__head" data-reveal>
-          <h2 class="faq__title">Questions a partner asks.</h2>
-        </div>
-        <div class="faq__list" data-reveal>
-          <div class="acc" data-open="false">
-            <button class="acc__btn" aria-expanded="false">
-              <span>Does Asteric claim to value a pending case?</span>
-              <span class="acc__chev" aria-hidden="true"></span>
-            </button>
-            <div class="acc__panel"><div class="acc__inner">
-              <p>No, and that restraint is deliberate. The product is descriptive and
-              calibration only. Claiming an omniscient valuation on noisy data would
-              destroy trust. We measure the judgment your partners already make.</p>
-            </div></div>
-          </div>
-          <div class="acc" data-open="false">
-            <button class="acc__btn" aria-expanded="false">
-              <span>What does the calibration curve actually measure?</span>
-              <span class="acc__chev" aria-hidden="true"></span>
-            </button>
-            <div class="acc__panel"><div class="acc__inner">
-              <p>Predicted probability of a favorable resolution against the observed
-              frequency, binned by decile, with a perfectly calibrated diagonal for
-              reference. It is how weather forecasters and quant funds are graded. We
-              make no causal claims.</p>
-            </div></div>
-          </div>
-          <div class="acc" data-open="false">
-            <button class="acc__btn" aria-expanded="false">
-              <span>Our data is a mess. Can you actually use it?</span>
-              <span class="acc__chev" aria-hidden="true"></span>
-            </button>
-            <div class="acc__panel"><div class="acc__inner">
-              <p>The mess is the point. You upload an export, a mapper proposes the
-              schema, free-text categories are normalized with confidence scores, and
-              anything uncertain routes to a review queue. Every field keeps its
-              original value beside the normalized one.</p>
-            </div></div>
-          </div>
-          <div class="acc" data-open="false">
-            <button class="acc__btn" aria-expanded="false">
-              <span>Is my firm's data shared across the network?</span>
-              <span class="acc__chev" aria-hidden="true"></span>
-            </button>
-            <div class="acc__panel"><div class="acc__inner">
-              <p>Never in raw form. You always see your own matters directly. Network
-              intelligence is derived from anonymized, aggregated signals, and
-              individual disputes are never exposed to other firms.</p>
-            </div></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ================= CTA ================= -->
-    <section class="cta" id="cta">
-      <div class="wrap cta__inner">
-        <h2 class="cta__title" data-reveal>Join the network with your own matters.</h2>
-        <p class="cta__sub" data-reveal>
-          Bring 200 to 1,000 closed matters and get back an analysis that changes a
-          real decision. We onboard a small number of design-partner firms at a time.
-        </p>
-        <a class="btn btn--ink btn--lg" href="/request-access" data-reveal>Request access</a>
-      </div>
-    </section>
-  </main>
-
-  <!-- ================= FOOTER ================= -->
-  <footer class="footer">
-    <div class="wrap footer__inner">
-      <div class="footer__brand">
-        <span class="brand__mark" aria-hidden="true">
-          <svg viewBox="0 0 40 40" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-            <line x1="20" y1="4" x2="20" y2="36"/>
-            <line x1="4" y1="20" x2="36" y2="20"/>
-            <line x1="10.5" y1="10.5" x2="29.5" y2="29.5"/>
-            <line x1="29.5" y1="10.5" x2="10.5" y2="29.5"/>
-            <circle cx="20" cy="20" r="2.4" fill="currentColor" stroke="none"/>
-          </svg>
-        </span>
-        <span class="brand__word">Asteric</span>
-      </div>
-      <nav class="footer__cols" aria-label="Footer">
-        <div class="footer__col">
-          <p class="footer__h">Product</p>
-          <a href="#ledger">Decision ledger</a>
-          <a href="#calibration">Calibration</a>
-          <a href="#economics">Economics</a>
-        </div>
-        <div class="footer__col">
-          <p class="footer__h">Company</p>
-          <a href="/request-access">Request access</a>
-          <a href="/contact">Contact</a>
-          <a href="/login">Log in</a>
-        </div>
-        <div class="footer__col">
-          <p class="footer__h">Legal</p>
-          <a href="/security">Security</a>
-          <a href="/privacy">Privacy</a>
-          <a href="/terms">Terms</a>
-        </div>
-      </nav>
     </div>
-    <div class="wrap footer__fine">
-      <span>&#169; 2026 Asteric</span>
-      <span>Demo data is fictional and illustrative. Keller &amp; Ross Employment Law does not exist.</span>
+  </div>
+</section>
+
+<!-- 2 · DECISION LEDGER ================================================== -->
+<section class="ch" id="ledger" data-ch="ledger" aria-labelledby="ledgerH">
+  <div class="stage"><div class="wrap">
+    <div class="col-copy">
+      <h2 class="h2" id="ledgerH">Preserve judgment before hindsight rewrites it.</h2>
+      <p class="lede mh">Every prediction is locked when it is recorded. A revision is a new version with the reason it changed. Events, offers and the outcome land on the same timeline, so the firm can see exactly what it knew, and when.</p>
+      <ol class="rail" id="rail">
+        <li>Initial prediction</li><li>Discovery</li><li>Revised prediction</li><li>Offers</li><li>Outcome</li>
+      </ol>
     </div>
-  </footer>
-<script src="/landing/landing.js" defer></script>
+    <div class="col-visual">
+      <div class="ui ledger-ui">
+        <div class="ui-head">
+          <div><p class="ui-title">Okonkwo v. Meridian Logistics</p><p class="ui-sub">KR-1182 · Wrongful termination · Jane Ross · Los Angeles County Superior Court</p></div>
+          <span class="ui-link"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>Data provenance</span>
+        </div>
+        <div class="ledger-win"><ol class="ledger-list" id="ledgerList">
+          <li class="li" data-k="pred" data-step="0">
+            <span class="dot"></span>
+            <div class="lm"><span class="num">Mar 14, 2024</span><span>Initial prediction</span><span>Jane Ross</span><span>Intake</span></div>
+            <div class="pred" style="margin-top:7px">
+              <div class="pred-grid">
+                <div><div class="pk">Recovery range</div><div class="pv">$300K–$450K</div></div>
+                <div><div class="pk">Favorable</div><div class="pv">65%</div></div>
+                <div><div class="pk">Duration</div><div class="pv">14.0 mo</div></div>
+                <div><div class="pk">Expense</div><div class="pv">$45,000</div></div>
+                <div><div class="pk">Confidence</div><div class="pv">Medium</div></div>
+              </div>
+              <div class="drivers"><span class="badge badge--out">Strong documentary evidence</span><span class="badge badge--out">Clear liability</span><span class="badge badge--out">Damages uncertainty</span></div>
+              <div style="margin-top:8px"><span class="lock">🔒&nbsp;Locked · recorded before the outcome was known</span></div>
+            </div>
+          </li>
+          <li class="li" data-k="event" data-step="1">
+            <span class="dot"></span>
+            <div class="lm"><span class="num">May 2 – Oct 2, 2024</span><span>Discovery</span></div>
+            <div class="lt">Complaint filed, written discovery, deposition of regional operations manager</div>
+            <div class="lx">Fact discovery closed Oct 2, 2024.</div>
+          </li>
+          <li class="li" data-k="pred" data-step="2">
+            <span class="dot"></span>
+            <div class="lm"><span class="num">Oct 9, 2024</span><span>Revision v2</span><span>Jane Ross</span><span>Post-discovery</span></div>
+            <div class="pred" style="margin-top:7px">
+              <div class="pred-grid">
+                <div><div class="pk">Recovery range</div><div class="pv">$400K–$550K</div><div class="pd">▲ +27% midpoint</div></div>
+                <div><div class="pk">Favorable</div><div class="pv">78%</div><div class="pd">▲ +13 pts</div></div>
+                <div><div class="pk">Duration</div><div class="pv">17.0 mo</div></div>
+                <div><div class="pk">Expense</div><div class="pv">$50,000</div></div>
+                <div><div class="pk">Confidence</div><div class="pv">High</div></div>
+              </div>
+              <p class="lx" style="margin-top:8px"><b style="font-weight:550;color:var(--ink)">Why revised:</b> Discovery completed: dispatch logs and the termination memo corroborate the client's account.</p>
+            </div>
+          </li>
+          <li class="li" data-k="offer" data-step="3">
+            <span class="dot"></span>
+            <div class="lm"><span class="num">Nov 2024 – Aug 2025</span><span>Demand and offers</span></div>
+            <div class="offers"><span class="chip">Demand <b>$650,000</b></span><span class="chip">Offer <b>$220,000</b></span><span class="chip">Offer <b>$380,000</b> · after mediation</span><span class="chip">Offer <b>$475,000</b></span></div>
+          </li>
+          <li class="li" data-k="out" data-step="4">
+            <span class="dot"></span>
+            <div class="lm"><span class="num">Aug 14, 2025</span><span>Outcome</span></div>
+            <div class="lt">Settlement · $475,000</div>
+            <div class="lx">Above the initial predicted range of $300K–$450K; inside the latest ($400K–$550K).</div>
+          </li>
+        </ol></div>
+        <div class="summary">
+          <div><div class="sk">Gross recovery</div><div class="sv">$475,000</div></div>
+          <div><div class="sk">Net fee to firm</div><div class="sv">$171,000</div></div>
+          <div><div class="sk">Duration</div><div class="sv">17.0 mo</div></div>
+          <div><div class="sk">Expenses</div><div class="sv">$48,200</div></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- 3 · PORTFOLIO ======================================================== -->
+<section class="ch" id="portfolio" data-ch="portfolio" aria-labelledby="portH">
+  <div class="stage"><div class="wrap">
+    <div class="col-copy">
+      <h2 class="h2" id="portH" data-rv>One decision is anecdote. Hundreds become intelligence.</h2>
+      <p class="lede" data-rv id="portLede">Each point is one matter in an illustrative employment firm: five years of intake decisions, offers and outcomes. On their own they are stories. Together they show how the firm's judgment and capital actually perform.</p>
+      
+    </div>
+    <div class="port-kpis" data-rv id="portKpis">
+      <div class="kpis">
+        <div class="kpi"><div class="kpi-k">Matters</div><div class="kpi-v">721</div><div class="kpi-f">150 open · 571 closed</div></div>
+        <div class="kpi"><div class="kpi-k">Capital at work</div><div class="kpi-v">$6.38M</div><div class="kpi-f">Expenses on open matters</div></div>
+        <div class="kpi"><div class="kpi-k">Median duration</div><div class="kpi-v">19.1 mo</div><div class="kpi-f">571 resolved matters</div></div>
+        <div class="kpi"><div class="kpi-k">Return on legal capital</div><div class="kpi-v">1.72×</div><div class="kpi-f">Expense-only</div></div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- 4 · CALIBRATION ====================================================== -->
+<section class="ch" id="calibration" data-ch="calibration" aria-labelledby="calH">
+  <div class="stage"><div class="wrap">
+    <div class="col-copy">
+      <h2 class="h2" id="calH">Measure judgment, not just outcomes.</h2>
+      <p class="lede">Group every prediction by the probability the firm assigned, then compare with how often those matters actually resolved favorably. On the diagonal, the firm's 70% means 70%.</p>
+      <div class="stat" data-rv id="calStat">
+        <div><b>0.218</b><span>Brier score · lower is better</span></div>
+        <div><b>0.240</b><span>Base-rate reference</span></div>
+        <div><b>330</b><span>Resolved predictions</span></div>
+      </div>
+      <div class="finding" data-rv id="calFind">
+        <p>Predictions between 90% and 100% favorable resolved favorably 64% of the time.</p>
+        <div class="m">n = 25 · initial predictions · historical association, not causation</div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- 5 · ECONOMICS ======================================================== -->
+<section class="ch" id="economics" data-ch="economics" aria-labelledby="ecoH">
+  <div class="stage">
+    <div class="econ">
+      <div class="econ-head">
+        <div><h2 class="h2" id="ecoH">The biggest case isn't always the best investment.</h2></div>
+        <p class="lede">Return on legal capital counts what a matter returned against what it consumed: referral splits, litigation expenses and attorney time.</p>
+      </div>
+      <div class="pair">
+        <article class="ui mx" aria-label="Whitmore v. Juniper Pharmacy">
+          <div class="ui-head"><div><p class="ui-title">Whitmore v. Juniper Pharmacy</p><p class="ui-sub">KR-1254 · Discrimination · Pacific Labor Referral Group</p></div></div>
+          <div class="ui-body">
+            <div class="mrow" data-i="0"><span>Gross recovery</span><b>$825,000</b></div>
+            <div class="mrow hide-sm" data-i="0"><span>Predicted at intake</span><b class="ink2">$1.09M–$1.74M</b></div>
+            <div class="mrow" data-i="1"><span>Referral fee paid</span><b class="neg">−$132,000</b></div>
+            <div class="mrow" data-i="1"><span>Net fee to firm</span><b>$198,000</b></div>
+            <div class="mrow" data-i="2"><span>Litigation expenses</span><b>$176,800</b></div>
+            <div class="mrow" data-i="2"><span>Attorney time</span><b>699 h</b></div>
+            <div class="mrow" data-i="3"><span>Duration</span><b>19.9 months</b></div>
+            <div class="bars">
+              <div class="bar"><span>Returned</span><div class="bar-t"><div class="bar-f" data-w="1"></div></div><span>$374,800</span></div>
+              <div class="bar"><span>Committed</span><div class="bar-t"><div class="bar-f cap" data-w=".798"></div></div><span>$299,125</span></div>
+            </div>
+            <div class="rolc"><span class="fine">ROLC · fully costed</span><span class="v" data-to="1.25">0.00×</span></div>
+          </div>
+        </article>
+        <article class="ui mx" aria-label="Underwood v. Summit Grocers">
+          <div class="ui-head"><div><p class="ui-title">Underwood v. Summit Grocers</p><p class="ui-sub">KR-1302 · Wrongful termination · Former client referral</p></div></div>
+          <div class="ui-body">
+            <div class="mrow" data-i="0"><span>Gross recovery</span><b>$374,500</b></div>
+            <div class="mrow hide-sm" data-i="0"><span>Predicted at intake</span><b class="ink2">$180K–$325K</b></div>
+            <div class="mrow" data-i="1"><span>Referral fee paid</span><b>$0</b></div>
+            <div class="mrow" data-i="1"><span>Net fee to firm</span><b>$149,800</b></div>
+            <div class="mrow" data-i="2"><span>Litigation expenses</span><b>$39,600</b></div>
+            <div class="mrow" data-i="2"><span>Attorney time</span><b>266 h</b></div>
+            <div class="mrow" data-i="3"><span>Duration</span><b>10.9 months</b></div>
+            <div class="bars">
+              <div class="bar"><span>Returned</span><div class="bar-t"><div class="bar-f" data-w=".505"></div></div><span>$189,400</span></div>
+              <div class="bar"><span>Committed</span><div class="bar-t"><div class="bar-f cap" data-w=".23"></div></div><span>$86,150</span></div>
+            </div>
+            <div class="rolc"><span class="fine">ROLC · fully costed</span><span class="v" data-to="2.20">0.00×</span></div>
+          </div>
+        </article>
+      </div>
+      <p class="verdict" data-rv id="verdict">Less than half the recovery. Nearly twice the return on every dollar and hour committed.</p>
+    </div>
+  </div>
+</section>
+<div class="econ-more" data-ch-plain="econ">
+  <div class="in">
+    <div>
+      <h3 class="h3">The source with the largest recoveries returned the least on capital.</h3>
+      <p class="lede">Large matters with a 40% referral split and longer durations can underperform smaller, faster ones. Asteric shows the trade-off by source, category, attorney, jurisdiction and year.</p>
+      <p class="fine" style="margin-top:22px">Return = net fee (attorney fee − referral fee) + expenses reimbursed from a favorable recovery. Expense-only capital = litigation expenses. Fully costed adds attorney hours × the firm's configured hourly cost ($175 in the demo). Figures come from Asteric's synthetic demonstration firm.</p>
+    </div>
+    <div class="ui">
+      <div class="ui-head"><div><p class="ui-title">Referral-source economics</p><p class="ui-sub">Resolved matters · expense-only ROLC · portfolio 1.72×</p></div><span class="ui-link">ⓘ Methodology</span></div>
+      <div style="overflow-x:auto"><table class="tbl">
+        <thead><tr><th>Referral source</th><th class="r">Resolved</th><th class="r">Median recovery</th><th class="r">Median duration</th><th class="r">ROLC</th></tr></thead>
+        <tbody>
+          <tr><td class="cp">Pacific Labor Referral Group</td><td class="r">79</td><td class="r"><b style="font-weight:550">$463K</b></td><td class="r">25.9 mo</td><td class="r"><b class="neg" style="font-weight:550">1.12×</b></td></tr>
+          <tr><td class="cp">Community legal clinic</td><td class="r">67</td><td class="r">$302K</td><td class="r">18.7 mo</td><td class="r"><b style="font-weight:550">2.19×</b></td></tr>
+          <tr><td class="cp">Former clients</td><td class="r">91</td><td class="r">$283K</td><td class="r">18.1 mo</td><td class="r"><b style="font-weight:550">2.12×</b></td></tr>
+          <tr><td class="cp">Bar association referral service</td><td class="r">103</td><td class="r">$282K</td><td class="r">18.5 mo</td><td class="r"><b style="font-weight:550">1.72×</b></td></tr>
+          <tr><td class="cp">Web intake</td><td class="r">122</td><td class="r">$260K</td><td class="r">18.5 mo</td><td class="r"><b style="font-weight:550">2.06×</b></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- 6 · PORTFOLIO WATCH ================================================== -->
+<section class="ch" id="watch" data-ch="watch" aria-labelledby="watchH">
+  <div class="stage"><div class="wrap">
+    <div class="col-copy">
+      <h2 class="h2" id="watchH">Bring yesterday's learning into today's portfolio.</h2>
+      <p class="lede mh">Open matters are compared with their latest recorded prediction every day. When costs run past forecast, a matter outlives its expected duration, or a major event passes without an update, it surfaces for review.</p>
+      <div class="drift" data-rv id="drift">
+        <div class="drift-row"><span>Delgado v. Corepoint</span><div><div class="drift-t"><div class="drift-f" id="d1"></div><div class="drift-m" style="left:61%"></div></div><div class="drift-l"><span>Expenses to date</span><span>Forecast $55,000 │ incurred <b class="num" id="d1v" style="font-weight:550;color:var(--ink)">$0</b></span></div></div></div>
+        <div class="drift-row"><span>Jansen v. Pacifica</span><div><div class="drift-t"><div class="drift-f" id="d2"></div><div class="drift-m" style="left:72%"></div></div><div class="drift-l"><span>Months open</span><span>Forecast 20.0 │ open <b class="num" id="d2v" style="font-weight:550;color:var(--ink)">0.0</b></span></div></div></div>
+      </div>
+      <p class="fine" style="margin-top:16px">Flags prompt a review of assumptions. They are not recommendations.</p>
+    </div>
+    <div class="col-visual">
+      <div class="ui">
+        <div class="ui-head"><div><p class="ui-title">Portfolio Watch</p><p class="ui-sub">139 flags on 89 open matters · thresholds: expenses +25% over forecast, prediction older than 180 days</p></div><span class="ui-link">ⓘ Methodology</span></div>
+        <div style="overflow-x:auto"><table class="tbl">
+          <thead><tr><th>Matter</th><th>Flag</th><th class="r">Measure</th></tr></thead>
+          <tbody>
+            <tr class="wrow"><td><span class="sev" data-s="high"></span><span style="display:inline-block;vertical-align:middle"><span class="cp">Marsh v. Redwood Transit</span><span class="cs">Jane Ross</span></span></td><td style="white-space:normal;min-width:210px"><span class="cp" style="font-weight:500">Expense variance</span><span class="cs flagd" style="font-size:11.5px;color:var(--ink-2);margin-top:1px">Incurred $103,500 against a latest predicted expense of $58,500.</span></td><td class="r"><b style="font-weight:550">+76.9%</b></td></tr>
+            <tr class="wrow"><td><span class="sev" data-s="high"></span><span style="display:inline-block;vertical-align:middle"><span class="cp">Jansen v. Pacifica Credit Union</span><span class="cs">Marco Rodriguez</span></span></td><td style="white-space:normal;min-width:210px"><span class="cp" style="font-weight:500">Duration exceeded</span><span class="cs flagd" style="font-size:11.5px;color:var(--ink-2);margin-top:1px">Open 25.8 months against an expected total duration of 20.0 months.</span></td><td class="r"><b style="font-weight:550">+5.8 mo</b></td></tr>
+            <tr class="wrow"><td><span class="sev" data-s="high"></span><span style="display:inline-block;vertical-align:middle"><span class="cp">Lindqvist v. Ansel Capital</span><span class="cs">David Chen</span></span></td><td style="white-space:normal;min-width:210px"><span class="cp" style="font-weight:500">Expense variance</span><span class="cs flagd" style="font-size:11.5px;color:var(--ink-2);margin-top:1px">Incurred $230,600 against a latest predicted expense of $150,000.</span></td><td class="r"><b style="font-weight:550">+53.7%</b></td></tr>
+            <tr class="wrow"><td><span class="sev" data-s="medium"></span><span style="display:inline-block;vertical-align:middle"><span class="cp">Delgado v. Corepoint Manufacturing</span><span class="cs">Marco Rodriguez</span></span></td><td style="white-space:normal;min-width:210px"><span class="cp" style="font-weight:500">Expense variance</span><span class="cs flagd" style="font-size:11.5px;color:var(--ink-2);margin-top:1px">Incurred $81,200 against a latest predicted expense of $55,000. Prediction 7 months old.</span></td><td class="r"><b style="font-weight:550">+47.6%</b></td></tr>
+            <tr class="wrow"><td><span class="sev" data-s="medium"></span><span style="display:inline-block;vertical-align:middle"><span class="cp">Park v. Atlas Security Services</span><span class="cs">Sofia Okafor</span></span></td><td style="white-space:normal;min-width:210px"><span class="cp" style="font-weight:500">Major event since prediction</span><span class="cs flagd" style="font-size:11.5px;color:var(--ink-2);margin-top:1px">Trial date set; no revision recorded since.</span></td><td class="r"><b style="font-weight:550">4 events</b></td></tr>
+            <tr class="wrow"><td><span class="sev" data-s="medium"></span><span style="display:inline-block;vertical-align:middle"><span class="cp">Kaur v. Lumen Biotech</span><span class="cs">David Chen</span></span></td><td style="white-space:normal;min-width:210px"><span class="cp" style="font-weight:500">Major event since prediction</span><span class="cs flagd" style="font-size:11.5px;color:var(--ink-2);margin-top:1px">Motion decided; no revision recorded since.</span></td><td class="r"><b style="font-weight:550">3 events</b></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- 7 · NETWORK ========================================================== -->
+<section class="ch" id="network" data-ch="network" aria-labelledby="netH">
+  <div class="stage"><div class="wrap">
+    <div class="col-copy">
+      <span class="preview">Asteric Network — Preview</span>
+      <h2 class="h2" id="netH">From private decision intelligence to an empirical layer for legal judgment.</h2>
+      <p class="lede mh">Asteric begins inside one firm. Over time, firms that choose to participate could compare their own judgment against de-identified aggregate signals: how predicted value, probability and duration actually map to outcomes across many firms' matters.</p>
+      <div class="disclaim" data-rv id="netDis"><b>Not active.</b> No firm's data is pooled or shared today. If launched, participation would be opt-in, limited to derived aggregates rather than records, and shown only above minimum group sizes. The network here is illustrative.</div>
+    </div>
+  </div></div>
+</section>
+
+<!-- 8 · PRODUCT ========================================================== -->
+<section class="ch" id="product" data-ch="product" aria-labelledby="prodH">
+  <div class="stage">
+    <div class="prod-head">
+      <h2 class="h2" id="prodH">Not a concept. A working system of record.</h2>
+      <p>The screens below are from Asteric's demonstration workspace: a fictional firm with 721 synthetic matters.</p>
+      <div class="tabs" role="tablist" aria-label="Product screens" id="tabs">
+        <button role="tab" aria-selected="true" data-t="0">Matters</button><button role="tab" aria-selected="false" data-t="1">Decision ledger</button><button role="tab" aria-selected="false" data-t="2">Calibration</button><button role="tab" aria-selected="false" data-t="3">Economics</button><button role="tab" aria-selected="false" data-t="4">Portfolio Watch</button>
+      </div>
+    </div>
+    <div class="frame" id="frame">
+      <aside class="f-side" aria-hidden="true">
+        <div class="f-brand"><svg viewBox="0 0 40 40" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="10.5" y1="10.5" x2="29.5" y2="29.5"/><line x1="29.5" y1="10.5" x2="10.5" y2="29.5"/></svg>Asteric</div>
+        <div class="f-org"><b>Keller &amp; Ross Employment Law</b><span>Demo viewer</span></div>
+        <span class="f-nav">Overview</span>
+        <span class="f-nav" data-nav="0">Matters</span>
+        <span class="f-nav" data-nav="4">Portfolio Watch <span class="c">4</span></span>
+        <span class="f-nav">Predictions</span>
+        <span class="f-nav">Imports</span>
+        <span class="f-eb">Intelligence</span>
+        <span class="f-nav" data-nav="2">Calibration</span>
+        <span class="f-nav" data-nav="3">Economics</span>
+        <span class="f-nav">Insights</span>
+        <span class="f-nav">Data quality</span>
+        <span class="f-nav">Network <span class="c">Preview</span></span>
+      </aside>
+      <div class="f-main">
+        <div class="f-banner">ⓘ <b>Illustrative demo organization.</b> All data is synthetic.</div>
+        <div class="f-top"><div class="f-search">⌕ Search matters, attorneys, actions… <span class="k">⌘K</span></div></div>
+        <div class="f-view" id="screens"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · SECURITY ========================================================= -->
+<section class="sec" id="security" aria-labelledby="secH">
+  <div class="in">
+    <h2 class="h2" id="secH" style="max-width:18ch">Built for information a firm cannot afford to mishandle.</h2>
+    <div class="sec-grid">
+      <div class="sec-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/></svg><h3>Tenant isolation</h3><p>Each firm's records are separated in the application and again by Postgres row-level security.</p></div>
+      <div class="sec-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10 18h4"/></svg><h3>Two-factor authentication</h3><p>Authenticator-app codes with single-use recovery codes, available to every user.</p></div>
+      <div class="sec-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M17 8h4M17 12h4M17 16h3"/></svg><h3>Role-based access</h3><p>Owner, administrator, attorney, analyst and read-only roles control what each member can do.</p></div>
+      <div class="sec-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7"/></svg><h3>Audit logging</h3><p>An append-only log of sign-ins, predictions, outcomes, imports, exports and settings changes.</p></div>
+      <div class="sec-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><h3>Immutable predictions</h3><p>Recorded predictions cannot be edited or deleted; the database enforces it.</p></div>
+      <div class="sec-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M5 20h14"/></svg><h3>Export and deletion</h3><p>Owners can export all data as CSV and schedule permanent deletion with a 30-day grace period.</p></div>
+      <div class="sec-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/></svg><h3>Encrypted infrastructure</h3><p>HTTPS everywhere, a managed database encrypted at rest, and encrypted two-factor secrets.</p></div>
+      <div class="sec-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.5l2.3 2.3 4.7-5"/></svg><h3>Human-confirmed imports</h3><p>Uncertain mappings wait for a reviewer. Nothing is guessed; every imported value keeps its source.</p></div>
+    </div>
+    <p class="sec-note">Asteric has not yet completed a SOC 2 or similar third-party audit. Asteric measures a firm's own historical records; it does not provide legal advice.</p>
+  </div>
+</section>
+
+<section class="cta" aria-labelledby="ctaH">
+  <h2 class="h2" id="ctaH">See your firm's judgment measured against its own outcomes.</h2>
+  <p>Import an export of closed and open matters. Calibration, economics and Portfolio Watch populate from your own records.</p>
+  <div class="hero-cta"><a class="btn btn--blue" href="/request-access">Request access</a><a class="btn btn--line" href="/login">Explore the demo</a></div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="in">
+    <span>© 2026 Asteric</span>
+    <nav aria-label="Footer"><a href="/">Product</a><a href="/security">Security</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/contact">Contact</a><a href="/login">Log in</a></nav>
+  </div>
+</footer>
+
+<script src="/landing/cinematic.js" defer></script>
 </body>
 </html>
